@@ -31,6 +31,7 @@
 #include <fc/thread/future.hpp>
 #include <fc/api.hpp>
 
+
 namespace steemit { namespace bbtone {
 using namespace chain;
 using app::application;

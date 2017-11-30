@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#include <steemit/bbtone/bbtone_evaluators.hpp>
-#include <steemit/bbtone/bbtone_operations.hpp>
+#include <steemit/bbtone/bbtone_evaluator.hpp>
+//#include <steemit/bbtone/bbtone_operations.hpp>
 #include <steemit/bbtone/bbtone_plugin.hpp>
 
 #include <steemit/app/impacted.hpp>
@@ -36,6 +36,49 @@
 
 #include <fc/smart_ref_impl.hpp>
 #include <fc/thread/thread.hpp>
+
+
+#include <steemit/app/application.hpp>
+
+#include <steemit/chain/database.hpp>
+#include <steemit/chain/database_exceptions.hpp>
+#include <steemit/chain/steem_objects.hpp>
+
+
+
+//#include <steemit/wallet/wallet.hpp>
+
+/************************************/
+/*
+
+#include <steemit/protocol/exceptions.hpp>
+
+#include <steemit/chain/database.hpp>
+#include <steemit/chain/database_exceptions.hpp>
+#include <steemit/chain/hardfork.hpp>
+#include <steemit/chain/steem_objects.hpp>
+
+#include <steemit/chain/util/reward.hpp>
+
+#include <steemit/witness/witness_objects.hpp>
+
+#include <fc/crypto/digest.hpp>
+
+
+#include <cmath>
+#include <iostream>
+#include <stdexcept>
+
+sing fc::string;
+
+
+*************************/
+
+
+using namespace steemit;
+using namespace steemit::chain;
+using namespace steemit::protocol;
+
 
 namespace steemit { namespace bbtone {
 
@@ -54,18 +97,22 @@ class bbtone_plugin_impl
       }
 
       bbtone_plugin&                                                             _self;
-      std::shared_ptr< generic_custom_operation_interpreter< steemit::bbtone::bbtone_plugin_operation > >   _custom_operation_interpreter;
+      // NEXT 
+		// std::shared_ptr< generic_custom_operation_interpreter< steemit::bbtone::bbtone_offer_create_operation > >   _custom_operation_interpreter;
       flat_map<string,string>                                                             _tracked_accounts;
 };
 
 bbtone_plugin_impl::bbtone_plugin_impl( bbtone_plugin& _plugin )
    : _self( _plugin )
 {
-   _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< steemit::bbtone::bbtone_plugin_operation > >( database() );
+   // NEXT 
+   // _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< steemit::bbtone::bbtone_offer_create_operation > >( database() );
 
-   _custom_operation_interpreter->register_evaluator< bbtone_evaluator >( &_self );
+   // NEXT 
+   // _custom_operation_interpreter->register_evaluator< bbtone_offer_create_evaluator >( &_self );
 
-   database().set_custom_operation_interpreter( _self.plugin_name(), _custom_operation_interpreter );
+   // NEXT 
+   // database().set_custom_operation_interpreter( _self.plugin_name(), _custom_operation_interpreter );
    return;
 }
 
@@ -76,11 +123,15 @@ bbtone_plugin_impl::~bbtone_plugin_impl()
 
 } // end namespace detail
 
-void bbtone_evaluator::do_apply( const bbtone_operation& pm )
-{
-   database& d = db();
 
-   const flat_map<string, string>& tracked_accounts = _plugin->my->_tracked_accounts;
+// NEXT
+/* 
+void bbtone_offer_create_evaluator::do_apply( const bbtone_offer_create_operation& pm )
+{
+   //database& d = db();
+	FC_ASSERT( 1 == 1);
+   
+	const flat_map<string, string>& tracked_accounts = _plugin->my->_tracked_accounts;
 
    auto to_itr   = tracked_accounts.lower_bound(pm.to);
    auto from_itr = tracked_accounts.lower_bound(pm.from);
@@ -107,7 +158,9 @@ void bbtone_evaluator::do_apply( const bbtone_operation& pm )
          std::copy( pm.encrypted_message.begin(), pm.encrypted_message.end(), pmo.encrypted_message.begin() );
       } );
    }
+
 }
+*/
 
 bbtone_plugin::bbtone_plugin( application* app )
    : plugin( app ), my( new detail::bbtone_plugin_impl(*this) )
@@ -174,8 +227,22 @@ vector< message_api_obj > bbtone_api::get_outbox( string from, time_point newest
    return result;
 }
 
-
 std::map<string, string> bbtone_api::broadcast_service_offer(string operator_id)const {
+	
+	string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
+	fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
+
+	transfer_operation op;
+	op.from = STEEMIT_INIT_MINER_NAME;
+   op.to = "operator2";
+	op.amount =  asset(1, STEEM_SYMBOL);
+
+   signed_transaction tx;
+   tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
+   tx.operations.push_back( op );
+	tx.sign( init_key, _app->chain_database()->get_chain_id() );
+	_app->chain_database()->push_transaction(tx);
+
 	std::map<string, string> res;
 	res.insert(pair< string, string >("tx_id", "7233"));
 	res.insert(pair< string, string >("MOCK_tx_sig", "efefefefefefefefefefefef"));
@@ -244,4 +311,5 @@ flat_map<string,string> bbtone_plugin::tracked_accounts() const
 
 STEEMIT_DEFINE_PLUGIN( bbtone, steemit::bbtone::bbtone_plugin )
 
-DEFINE_OPERATION_TYPE( steemit::bbtone::bbtone_plugin_operation )
+// NEXT 
+// DEFINE_OPERATION_TYPE( steemit::bbtone::bbtone_offer_create_operation )

@@ -1,0 +1,12 @@
+unlock 123
+
+import_key 5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n
+
+create_account "initminer" "operator1" "" true
+
+create_account "initminer" "operator2" "" true
+
+transfer "initminer" "operator1" "5.000 TESTS" "" true
+
+transfer "initminer" "operator2" "5.000 TESTS" "" true
+
