@@ -73,11 +73,10 @@ cd \$HOME/bbt_steem
  \# edit code...
 \$HOME/bbt_steem/steem_testnet/rebuild_steemd_with_plugin.sh
 
-#### Run (test steemd daemon)
 #### Info
 Compiled *steemd* daemon uses **config.ini** from **bbt_steem/steem_testnet/config.ini**, and this config is copied to steemd workind dir every run, to make first simple test cycle. 
 
-#### Run
+#### Run (test steemd daemon)
 cd \$HOME/steem/build
 \$HOME/bbt_steem/steem_testnet/testrun_steemd.sh
 
@@ -87,7 +86,7 @@ Now we can test working node, sending several request to it. Full requests pack 
 
 #### Run
 
- # for example
+ \# for example
 curl --data '{"jsonrpc": "2.0", "params": [4, "get_service_offers_of_given_operator_id", [1]], "id":2, "method":"call"}' http://127.0.0.1:8090
 
  \# first, you need to get API ID, assigned by steemd to bbt_plugin_api (number of APIs family). 
