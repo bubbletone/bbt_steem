@@ -9,7 +9,7 @@ Install and run test node on Ubunty 16.04. If you want to use other OS, please f
 ### 1. Install steem (a part of instruction from **building.md**)
 This part is taken from https://github.com/steemit/steem/blob/master/doc/building.md#building-on-ubuntu-1604.
 
-####Run
+#### Run
 sudo apt-get install -y \
     autoconf \
     automake \
@@ -23,7 +23,7 @@ sudo apt-get install -y \
     python3 \
     python3-jinja2
     
-####Run
+#### Run
 sudo apt-get install -y \
     libboost-chrono-dev \
     libboost-context-dev \
