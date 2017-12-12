@@ -64,12 +64,13 @@ make -j$(nproc) steemd
 
 ### 3. Test cycle
 #### Info 
-  # All packages and code for test node will reside in **\$HOME/steem** (main steem code) and **\$HOME/bbt_steem** (bbt plugin). Now, bbt_plugin(bbt_steem/libraries/) is simply copied over **steem/libraries/plugins/bbt_plugin** every time we update the source 
+
+ \# All packages and code for test node will reside in **\$HOME/steem** (main steem code) and **\$HOME/bbt_steem** (bbt plugin). Now, bbt_plugin(bbt_steem/libraries/) is simply copied over **steem/libraries/plugins/bbt_plugin** every time we update the source 
 
 #### Run
 cd \$HOME/bbt_steem
- # edit code...
- # edit code...
+ \# edit code...
+ \# edit code...
 \$HOME/bbt_steem/steem_testnet/rebuild_steemd_with_plugin.sh
 
 #### Run (test steemd daemon)
@@ -89,9 +90,9 @@ Now we can test working node, sending several request to it. Full requests pack 
  # for example
 curl --data '{"jsonrpc": "2.0", "params": [4, "get_service_offers_of_given_operator_id", [1]], "id":2, "method":"call"}' http://127.0.0.1:8090
 
- # first, you need to get API ID, assigned by steemd to bbt_plugin_api (number of APIs family). 
- # If result is something like *{"id":1,"result":4}* - then API ID for bbtone_api is 4.
- # You should use this number in all bbtone_api calls in future.
+ \# first, you need to get API ID, assigned by steemd to bbt_plugin_api (number of APIs family). 
+ \# If result is something like *{"id":1,"result":4}* - then API ID for bbtone_api is 4.
+ \# You should use this number in all bbtone_api calls in future.
  
 curl --data '{"jsonrpc": "2.0", "params": [**1**, "get_api_by_name", ["bbtone_api"]], "id":1, "method":"call"}' http://127.0.0.1:8090
 
