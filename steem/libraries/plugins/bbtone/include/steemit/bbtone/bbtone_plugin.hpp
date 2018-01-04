@@ -35,7 +35,6 @@
 namespace steemit { namespace bbtone {
 using namespace chain;
 using app::application;
-
 //
 // Plugins should #define their SPACE_ID's so plugins with
 // conflicting SPACE_ID assignments can be compiled into the
@@ -46,192 +45,63 @@ using app::application;
 // various template automagic depends on them being known at compile
 // time.
 //
-#ifndef PRIVATE_MESSAGE_SPACE_ID
-#define PRIVATE_MESSAGE_SPACE_ID 6
-#endif
-
-#define STEEMIT_PRIVATE_MESSAGE_COP_ID 777
-
-enum bbtone_object_type
-{
-   message_object_type = ( PRIVATE_MESSAGE_SPACE_ID << 8 )
-};
-
 
 namespace detail
 {
     class bbtone_plugin_impl;
 }
 
-struct message_body
-{
-    fc::time_point    thread_start; /// the sent_time of the original message, if any
-    string            subject;
-    string            body;
-    string            json_meta;
-    flat_set<string>  cc;
-};
-
-
-
-class message_object : public object< message_object_type, message_object >
-{
-   public:
-      template< typename Constructor, typename Allocator >
-      message_object( Constructor&& c, allocator< Allocator > a ) :
-         encrypted_message( a )
-      {
-         c( *this );
-      }
-
-      id_type           id;
-
-      account_name_type from;
-      account_name_type to;
-      public_key_type   from_memo_key;
-      public_key_type   to_memo_key;
-      uint64_t          sent_time = 0; /// used as seed to secret generation
-      time_point_sec    receive_time; /// time received by blockchain
-      uint32_t          checksum = 0;
-      buffer_type       encrypted_message;
-};
-
-typedef message_object::id_type message_id_type;
-
-struct message_api_obj
-{
-   message_api_obj( const message_object& o ) :
-      id( o.id ),
-      from( o.from ),
-      to( o.to ),
-      from_memo_key( o.from_memo_key ),
-      to_memo_key( o.to_memo_key ),
-      sent_time( o.sent_time ),
-      receive_time( o.receive_time ),
-      checksum( o.checksum ),
-      encrypted_message( o.encrypted_message.begin(), o.encrypted_message.end() )
-   {}
-
-   message_api_obj(){}
-
-   message_id_type   id;
-   account_name_type from;
-   account_name_type to;
-   public_key_type   from_memo_key;
-   public_key_type   to_memo_key;
-   uint64_t          sent_time;
-   time_point_sec    receive_time;
-   uint32_t          checksum;
-   vector< char >    encrypted_message;
-};
-
-struct extended_message_object : public message_api_obj
-{
-   extended_message_object() {}
-   extended_message_object( const message_api_obj& o ):message_api_obj( o ) {}
-
-   message_body   message;
-};
-
-struct by_to_date;
-struct by_from_date;
-
-using namespace boost::multi_index;
-
-typedef multi_index_container<
-   message_object,
-   indexed_by<
-      ordered_unique< tag< by_id >, member< message_object, message_id_type, &message_object::id > >,
-      ordered_unique< tag< by_to_date >,
-            composite_key< message_object,
-               member< message_object, account_name_type, &message_object::to >,
-               member< message_object, time_point_sec, &message_object::receive_time >,
-               member< message_object, message_id_type, &message_object::id >
-            >,
-            composite_key_compare< std::less< string >, std::greater< time_point_sec >, std::less< message_id_type > >
-      >,
-      ordered_unique< tag< by_from_date >,
-            composite_key< message_object,
-               member< message_object, account_name_type, &message_object::from >,
-               member< message_object, time_point_sec, &message_object::receive_time >,
-               member< message_object, message_id_type, &message_object::id >
-            >,
-            composite_key_compare< std::less< string >, std::greater< time_point_sec >, std::less< message_id_type > >
-      >
-   >,
-   allocator< message_object >
-> message_index;
-
-
-/**
- *   This plugin scans the blockchain for custom operations containing a valid message and authorized
- *   by the posting key.
- *
- */
 class bbtone_plugin : public steemit::app::plugin
 {
-   public:
-      bbtone_plugin( application* app );
-      virtual ~bbtone_plugin();
+public:
+    bbtone_plugin( application* app );
+    virtual ~bbtone_plugin();
 
-      std::string plugin_name()const override;
-      virtual void plugin_set_program_options(
-         boost::program_options::options_description& cli,
-         boost::program_options::options_description& cfg) override;
-      virtual void plugin_initialize(const boost::program_options::variables_map& options) override;
-      virtual void plugin_startup() override;
+    std::string plugin_name()const override;
+    virtual void plugin_set_program_options(
+        boost::program_options::options_description& cli,
+        boost::program_options::options_description& cfg) override;
+    virtual void plugin_initialize(const boost::program_options::variables_map& options) override;
+    virtual void plugin_startup() override;
 
-      flat_map<string,string> tracked_accounts()const; /// map start_range to end_range
+    flat_map<string,string> tracked_accounts()const; /// map start_range to end_range
 
-      friend class detail::bbtone_plugin_impl;
-      std::unique_ptr<detail::bbtone_plugin_impl> my;
+    friend class detail::bbtone_plugin_impl;
+    std::unique_ptr<detail::bbtone_plugin_impl> my;
 };
 
-class bbtone_api : public std::enable_shared_from_this<bbtone_api> {
-   public:
-      bbtone_api(){};
-      bbtone_api(const app::api_context& ctx):_app(&ctx.app){
-         ilog( "creating private message api" );
-      }
-      void on_api_startup(){
-         wlog( "on bbtone api startup" );
-      }
 
-      /**
-       *
-       */
-      vector< message_api_obj > get_inbox( string to, time_point newest, uint16_t limit )const;
-      vector< message_api_obj > get_outbox( string from, time_point newest, uint16_t limit )const;
+class bbtone_api : public std::enable_shared_from_this<bbtone_api>
+{
+public:
+    bbtone_api(){};
+    bbtone_api(const app::api_context& ctx):_app(&ctx.app){
+        ilog( "creating bbtone api" );
+    }
+    void on_api_startup(){
+        wlog( "on bbtone api startup" );
+    }
 
-		std::map< string, string > broadcast_service_offer(string operator_id)const;
-		vector< std::map<string, string> > get_service_offers_of_given_operator_id(string offering_operator_id)const;
-		std::map<string, string> attach_service_request_to_service_offer(string offer_tx_id)const;
-		vector< std::map<string, string> > get_active_service_requests_of_given_operator_id(string requesting_operator_id)const;
-		std::map<string, string> attach_charge_to_service_request(string service_tx_id)const;
-		std::map<string, string> refund_and_close_request(string service_tx_id)const;
 
-   private:
-      app::application* _app = nullptr;
+    std::map< string, string > broadcast_service_offer(string operator_name)const;
+    vector< std::map<string, string> > get_service_offers_of_given_operator_name(string offering_operator_name)const;
+    std::map<string, string> attach_service_request_to_service_offer(string offer_tx_id)const;
+    vector< std::map<string, string> > get_active_service_requests_of_given_operator_name(string requesting_operator_name)const;
+    std::map<string, string> attach_charge_to_service_request(string service_tx_id)const;
+    std::map<string, string> refund_and_close_request(string service_tx_id)const;
+
+private:
+    app::application* _app = nullptr;
 };
 
 } } //steemit::bbtone
 
 FC_API( steemit::bbtone::bbtone_api,
-	(get_inbox)
-	(get_outbox)
-	(broadcast_service_offer)
-	(get_service_offers_of_given_operator_id)
-	(attach_service_request_to_service_offer)
-	(get_active_service_requests_of_given_operator_id)
-	(attach_charge_to_service_request)
-	(refund_and_close_request)
-	);
+    (broadcast_service_offer)
+    (get_service_offers_of_given_operator_name)
+    (attach_service_request_to_service_offer)
+    (get_active_service_requests_of_given_operator_name)
+    (attach_charge_to_service_request)
+    (refund_and_close_request)
+    );
 
-FC_REFLECT( steemit::bbtone::message_body, (thread_start)(subject)(body)(json_meta)(cc) );
-
-FC_REFLECT( steemit::bbtone::message_object, (id)(from)(to)(from_memo_key)(to_memo_key)(sent_time)(receive_time)(checksum)(encrypted_message) );
-CHAINBASE_SET_INDEX_TYPE( steemit::bbtone::message_object, steemit::bbtone::message_index );
-
-FC_REFLECT( steemit::bbtone::message_api_obj, (id)(from)(to)(from_memo_key)(to_memo_key)(sent_time)(receive_time)(checksum)(encrypted_message) );
-
-FC_REFLECT_DERIVED( steemit::bbtone::extended_message_object, (steemit::bbtone::message_api_obj), (message) );

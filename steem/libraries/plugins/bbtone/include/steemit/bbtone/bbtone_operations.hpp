@@ -1,4 +1,5 @@
 #pragma once
+
 #include <steemit/protocol/base.hpp>
 #include <steemit/protocol/block_header.hpp>
 #include <steemit/protocol/asset.hpp>
@@ -7,7 +8,10 @@
 #include <fc/crypto/equihash.hpp>
 #include <fc/api.hpp>
 
+#include <steemit/bbtone/bbtone_plugin.hpp>
+
 namespace steemit { namespace bbtone {
+
 using namespace steemit::protocol;
 
    /*inline void validate_account_name( const string& name )
@@ -21,46 +25,41 @@ using namespace steemit::protocol;
       FC_ASSERT( fc::is_utf8( permlink ), "permlink not formatted in UTF8" );
    }*/
 
-	
-   // NEXT 
-	/*
-   struct bbtone_offer_create_operation : public base_operation
-   {
-		// operation struct was spizded from order creation operation
-      account_name_type owner;
-      uint32_t          offerid = 0; /// an ID assigned by owner, must be unique
-		uint32_t				service_id = 0; // ID of service (tariff information, metadata, etc)
-		uint32_t				ttl; // TTL of offer in seconds
-		price					service_price; 
-     
-		// asset             amount_to_sell;
-      // asset             min_to_receive;
-      // bool              fill_or_kill = false;
-      // time_point_sec    expiration = time_point_sec::maximum();
 
-      void  validate()const;
-      void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
-   };
-	*/
+struct offer_create_operation : base_operation
+{
+    account_name_type   operator_name;
+    uint32_t            offer_id; /// an ID assigned by owner, must be unique
+    uint32_t            service_id; // ID of service (tariff information, metadata, etc)
+    uint32_t            service_ttl; // TTL of offer in seconds
+    asset               service_fee;
 
-   /**
-    *  Cancels an offer and returns the balance to owner.
-    */
-   // NEXT 
-	/*
-   struct bbtone_offer_cancel_operation : public base_operation
-   {
-      account_name_type owner;
-      uint32_t          offerid = 0;
+//    void  validate()const;
+//    void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
+};
 
-      void  validate()const;
-      void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
-   };
-	*/
+struct offer_cancel_operation : base_operation
+{
+    account_name_type   operator_name;
+    uint32_t            offer_id;
 
-} } // steemit::protocol
+//    void  validate()const;
+//    void  get_required_active_authorities( flat_set<account_name_type>& a )const{ a.insert(owner); }
+};
 
+typedef fc::static_variant<
+         offer_create_operation,
+         offer_cancel_operation
+      > bbtone_plugin_operation;
 
-// NEXT 
-// FC_REFLECT( steemit::bbtone::bbtone_offer_create_operation, (owner)(offerid)(service_id)(ttl)(service_price) )
-// FC_REFLECT( steemit::bbtone::bbtone_offer_cancel_operation, (owner)(offerid) )
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_create );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_cancel );
+
+} } // steemit::bbtone
+
+FC_REFLECT( steemit::bbtone::offer_create_operation, (operator_name)(offer_id)(service_id)(service_ttl)(service_fee) )
+FC_REFLECT( steemit::bbtone::offer_cancel_operation, (operator_name)(offer_id) )
+
+DECLARE_OPERATION_TYPE( steemit::bbtone::bbtone_plugin_operation )
+
+FC_REFLECT_TYPENAME( steemit::bbtone::bbtone_plugin_operation )

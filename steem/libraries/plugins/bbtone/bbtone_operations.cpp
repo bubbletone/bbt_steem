@@ -1,17 +1,15 @@
-#include <steemit/protocol/steem_operations.hpp>
-#include <fc/io/json.hpp>
+#include <steemit/protocol/operation_util_impl.hpp>
 
-#include <locale>
+#include <steemit/bbtone/bbtone_operations.hpp>
 
 namespace steemit { namespace bbtone {
-using namespace steemit::protocol;
 
    /* bool inline is_asset_type( asset asset, asset_symbol_type symbol )
    {
       return asset.symbol == symbol;
    }*/
 
-
+/*
    void bbtone_offer_create_operation::validate()const
    {
       validate_account_name( owner );
@@ -26,5 +24,7 @@ using namespace steemit::protocol;
       validate_account_name( owner );
    }
 
+*/
+} } // steemit::bbtone
 
-} } // steemit::protocol
+DEFINE_OPERATION_TYPE( steemit::bbtone::bbtone_plugin_operation )

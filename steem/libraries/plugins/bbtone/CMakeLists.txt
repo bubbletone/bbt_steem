@@ -2,6 +2,8 @@ file(GLOB HEADERS "include/steemit/bbtone/*.hpp")
 
 add_library( steemit_bbtone
              bbtone_plugin.cpp
+             bbtone_evaluator.cpp
+             bbtone_operations.cpp
            )
 
 target_link_libraries( steemit_bbtone steemit_chain steemit_protocol steemit_app )
