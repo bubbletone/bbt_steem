@@ -1,7 +1,7 @@
 #!/bin/bash
  
 mkdir -p $HOME/steem/build
-cd $HOME/steem/build
+cd $HOME/steem/
 
 # heh, sorry
 cp -R $HOME/bbt_steem/steem/libraries/plugins/bbtone $HOME/steem/libraries/plugins/

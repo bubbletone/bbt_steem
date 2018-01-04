@@ -31,6 +31,8 @@
 #include <fc/thread/future.hpp>
 #include <fc/api.hpp>
 
+#include <steemit/bbtone/bbtone_objects.hpp>
+
 
 namespace steemit { namespace bbtone {
 using namespace chain;
@@ -83,8 +85,9 @@ public:
     }
 
 
-    std::map< string, string > broadcast_service_offer(string operator_name)const;
-    vector< std::map<string, string> > get_service_offers_of_given_operator_name(string offering_operator_name)const;
+    void broadcast_service_offer(string operator_name, uint32_t offer_id, uint32_t service_id,
+                                 uint32_t service_ttl, asset service_fee)const;
+    vector< offer_object > get_service_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const;
     std::map<string, string> attach_service_request_to_service_offer(string offer_tx_id)const;
     vector< std::map<string, string> > get_active_service_requests_of_given_operator_name(string requesting_operator_name)const;
     std::map<string, string> attach_charge_to_service_request(string service_tx_id)const;

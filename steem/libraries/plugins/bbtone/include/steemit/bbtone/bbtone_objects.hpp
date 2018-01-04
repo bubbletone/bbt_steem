@@ -23,7 +23,7 @@ using namespace chain;
 // time.
 //
 #ifndef BBTONE_SPACE_ID
-#define BBTONE_SPACE_ID 12
+#define BBTONE_SPACE_ID 13
 #endif
 
 enum bbtone_object_type
@@ -58,20 +58,21 @@ typedef offer_object::id_type offer_id_type;
 
 namespace offer_index_tag {
     struct by_id;
-    struct by_operator_name_offer_id_tx_time;
+    struct by_operator_name;
+    struct by_operator_name_offer_id;
 }
 
 typedef multi_index_container<
     offer_object,
     indexed_by<
         ordered_unique< tag< offer_index_tag::by_id >, member< offer_object, offer_id_type, &offer_object::id > >,
-        ordered_unique< tag< offer_index_tag::by_operator_name_offer_id_tx_time >,
+        ordered_non_unique< tag< offer_index_tag::by_operator_name >, member< offer_object, account_name_type, &offer_object::operator_name > >,
+        ordered_unique< tag< offer_index_tag::by_operator_name_offer_id >,
             composite_key< offer_object,
                 member< offer_object, account_name_type, &offer_object::operator_name >,
-                member< offer_object, uint32_t, &offer_object::offer_id >,
-                member< offer_object, time_point, &offer_object::tx_time >
+                member< offer_object, uint32_t, &offer_object::offer_id >
             >,
-            composite_key_compare< std::less< string >, std::greater< uint32_t >, std::less< time_point > >
+            composite_key_compare< std::less< string >, std::greater< uint32_t > >
         >
     >,
     allocator< offer_object >

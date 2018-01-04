@@ -158,43 +158,47 @@ void bbtone_plugin::plugin_initialize(const boost::program_options::variables_ma
     LOAD_VALUE_SET(options, "pm-accounts", my->_tracked_accounts, pairstring);
 }
 
-std::map<string, string> bbtone_api::broadcast_service_offer(string operator_name)const {
+
+void bbtone_api::broadcast_service_offer(string operator_name, uint32_t offer_id,
+                    uint32_t service_id, uint32_t service_ttl, asset service_fee)const
+{
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
     offer_create_operation op;
-    op.operator_name = "operator2";
-    op.offer_id = 1;
-    op.service_id = 1;
-    op.service_ttl = 1000;
-    op.service_fee = asset(1, STEEM_SYMBOL);
+    op.operator_name = operator_name;
+    op.offer_id = offer_id;
+    op.service_id = service_id;
+    op.service_ttl = service_ttl;
+    op.service_fee = service_fee;
+    op.required_posting_auths.insert(STEEMIT_INIT_MINER_NAME);
+
+    bbtone_plugin_operation bop = op;
 
     custom_json_operation jop;
     jop.id = "bbtone";
-    jop.json = fc::json::to_string(op);
-    jop.required_auths.insert(op.operator_name);
+    jop.json = fc::json::to_string(bop);
+    jop.required_posting_auths.insert(STEEMIT_INIT_MINER_NAME);
 
     signed_transaction tx;
     tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( jop );
     tx.sign( init_key, _app->chain_database()->get_chain_id() );
-    _app->chain_database()->push_transaction(tx, true);
+    tx.validate();
+    _app->chain_database()->push_transaction(tx);
 
-    std::map<string, string> res;
-    res.insert(pair< string, string >("tx_id", "7233"));
-    res.insert(pair< string, string >("MOCK_tx_sig", "efefefefefefefefefefefef"));
-    res.insert(pair< string, string >("operator_name", operator_name));
-    res.insert(pair< string, string >("ok", "1"));
-    return res ;
+    return;
 }
 
-vector< std::map<string, string> > bbtone_api::get_service_offers_of_given_operator_name(string offering_operator_name)const {
-    vector< std::map<string, string> > res;
-    res = {
-        {{"tx_id","444"}, {"operator_name", offering_operator_name}, {"expires", "1609459200"}, {"price", "10.65"}, {"MOCK_tx_sig", "bababababababababababab"}},
-        {{"tx_id","445"}, {"operator_name", offering_operator_name}, {"expires", "1609459200"}, {"price", "12.35"}, {"MOCK_tx_sig", "dededededededededededed"}},
-        {{"tx_id","555"}, {"operator_name", offering_operator_name}, {"expires", "1609459200"}, {"price", "22.00"}, {"MOCK_tx_sig", "afafafafafafafafafafafa"}}
-    };
+vector< offer_object > bbtone_api::get_service_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const {
+    vector< offer_object > res;
+    const auto & idx = _app->chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_operator_name>();
+    auto startIt = idx.lower_bound(offering_operator_name);
+    auto endIt = idx.upper_bound(offering_operator_name);
+
+    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
+        res.push_back(*it);
+
     return res;
 }
 
