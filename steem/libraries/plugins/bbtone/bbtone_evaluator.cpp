@@ -28,26 +28,161 @@ using namespace steemit::protocol;
 using fc::uint128_t;
 using fc::api;
 
-
 void offer_create_evaluator::do_apply( const offer_create_operation& o )
 {
     const auto& owner = _db.get_account( o.operator_name );
 
+    //TODO balances update
     _db.create<offer_object>( [&]( offer_object& obj )
     {
-        obj.operator_name = owner.name;
-        obj.offer_id    = o.offer_id;
-        obj.tx_time     = (time_point)_db.head_block_time();
-        obj.service_ttl = o.service_ttl;
-        obj.service_id  = o.service_id;
-        obj.service_fee = o.service_fee;
+        obj.tx_time         = (time_point)_db.head_block_time();
+        obj.operator_name   = owner.name;
+        obj.offer_ttl       = o.offer_ttl;
+        obj.offer_local_id  = o.offer_local_id;
+        obj.offer_data      = o.offer_data;
+        obj.price           = o.price;
+        obj.state           = offer_active;
     });
 }
 
 void offer_cancel_evaluator::do_apply( const offer_cancel_operation& o )
 {
-   // _db.cancel_order( _db.get_limit_order( o.owner, o.orderid ) );
+    const auto & idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
+    auto offer_it = idx.find(offer_id_type(o.offer_id));
+    FC_ASSERT(offer_it != idx.end(), "offer not found");
+
+    _db.modify<offer_object>(*offer_it, [&]( offer_object& obj )
+    {
+        obj.state           = offer_completed;
+    });
 }
 
+void request_start_evaluator::do_apply( const request_start_operation& o )
+{
+    const auto& issuer = _db.get_account( o.issuer_operator_name );
+    FC_ASSERT(issuer.balance >= o.credits, "not enough balance");
+
+    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
+    auto offer_it = offer_idx.find(offer_id_type(o.target_offer_id));
+    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
+
+    FC_ASSERT(offer_it->state == offer_active, "offer not active");
+    FC_ASSERT(o.credits <= offer_it->price, "request credits > offer price");
+
+    //TODO balances update
+    _db.create<request_object>( [&]( request_object& obj )
+    {
+        obj.tx_time = (time_point)_db.head_block_time();
+        obj.issuer_operator_name = issuer.name;
+        obj.assignee_offer_id = o.target_offer_id;
+        obj.request_ttl = o.request_ttl;
+        obj.max_credits = o.credits;
+        obj.user_id = o.user_id;
+        obj.user_pub_key = o.user_pub_key;
+        obj.charge = asset(0, STEEM_SYMBOL);
+        obj.state = request_preparing;
+    });
+}
+
+void request_accept_evaluator::do_apply( const request_accept_operation& o )
+{
+    const auto& assignee = _db.get_account( o.operator_name );
+
+    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
+    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
+    FC_ASSERT(request_it != request_idx.end(), "request not found");
+
+    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
+    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
+    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
+    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
+
+    //TODO balances update
+    _db.modify<request_object>(*request_it, [&]( request_object& obj )
+    {
+        obj.state = request_accepted;
+    });
+}
+
+void request_ready_evaluator::do_apply( const request_ready_operation& o )
+{
+    const auto& assignee = _db.get_account( o.operator_name );
+
+    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
+    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
+    FC_ASSERT(request_it != request_idx.end(), "request not found");
+    FC_ASSERT(request_it->issuer_operator_name == o.operator_name, "only request issuer can ready");
+
+    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
+    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
+    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
+
+    //TODO balances update
+    _db.modify<request_object>(*request_it, [&]( request_object& obj )
+    {
+        obj.state = request_ready;
+    });
+}
+
+void request_inwork_evaluator::do_apply( const request_inwork_operation& o )
+{
+    const auto& assignee = _db.get_account( o.operator_name );
+
+    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
+    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
+    FC_ASSERT(request_it != request_idx.end(), "request not found");
+
+    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
+    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
+    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
+    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can inwork request");
+
+    //TODO balances update
+    _db.modify<request_object>(*request_it, [&]( request_object& obj )
+    {
+        obj.state = request_inwork;
+    });
+}
+
+void request_report_evaluator::do_apply( const request_report_operation& o )
+{
+    const auto& assignee = _db.get_account( o.operator_name );
+
+    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
+    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
+    FC_ASSERT(request_it != request_idx.end(), "request not found");
+
+    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
+    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
+    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
+    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
+
+    //TODO balances update
+    /*
+    _db.modify<request_object>( [&]( request_object& obj )
+    {
+    });
+    */
+}
+
+void request_end_evaluator::do_apply( const request_end_operation& o )
+{
+    const auto& assignee = _db.get_account( o.operator_name );
+
+    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
+    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
+    FC_ASSERT(request_it != request_idx.end(), "request not found");
+
+    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
+    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
+    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
+    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
+
+    //TODO balances update
+    _db.modify<request_object>(*request_it, [&]( request_object& obj )
+    {
+        obj.state = request_completed;
+    });
+}
 
 } } // steemit::chain

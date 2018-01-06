@@ -44,35 +44,7 @@
 #include <steemit/chain/database_exceptions.hpp>
 #include <steemit/chain/steem_objects.hpp>
 
-
-
-//#include <steemit/wallet/wallet.hpp>
-
-/************************************/
-/*
-
-#include <steemit/protocol/exceptions.hpp>
-
-#include <steemit/chain/database.hpp>
-#include <steemit/chain/database_exceptions.hpp>
-#include <steemit/chain/hardfork.hpp>
-#include <steemit/chain/steem_objects.hpp>
-
-#include <steemit/chain/util/reward.hpp>
-
-#include <steemit/witness/witness_objects.hpp>
-
-#include <fc/crypto/digest.hpp>
-
-
-#include <cmath>
-#include <iostream>
-#include <stdexcept>
-
-sing fc::string;
-
-
-*************************/
+#include <graphene/utilities/key_conversion.hpp>
 
 
 using namespace steemit;
@@ -109,6 +81,12 @@ bbtone_plugin_impl::bbtone_plugin_impl( bbtone_plugin& _plugin )
 
     _custom_operation_interpreter->register_evaluator< offer_create_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< offer_cancel_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< request_start_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< request_accept_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< request_ready_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< request_inwork_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< request_report_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< request_end_evaluator >( &_self );
 
     database().set_custom_operation_interpreter( _self.plugin_name(), _custom_operation_interpreter );
     return;
@@ -151,6 +129,7 @@ void bbtone_plugin::plugin_initialize(const boost::program_options::variables_ma
     ilog("Intializing bbtone plugin" );
     chain::database& db = database();
     add_plugin_index< offer_index >(db);
+    add_plugin_index< offer_index >(db);
 
     app().register_api_factory<bbtone_api>("bbtone_api");
 
@@ -159,35 +138,41 @@ void bbtone_plugin::plugin_initialize(const boost::program_options::variables_ma
 }
 
 
-void bbtone_api::broadcast_service_offer(string operator_name, uint32_t offer_id,
-                    uint32_t service_id, uint32_t service_ttl, asset service_fee)const
+map<string, string> bbtone_api::broadcast_service_offer(string operator_name, uint64_t offer_local_id,
+                    string offer_data, uint32_t offer_ttl, asset price)const
 {
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
     offer_create_operation op;
     op.operator_name = operator_name;
-    op.offer_id = offer_id;
-    op.service_id = service_id;
-    op.service_ttl = service_ttl;
-    op.service_fee = service_fee;
-    op.required_posting_auths.insert(STEEMIT_INIT_MINER_NAME);
+    op.offer_ttl = offer_ttl;
+    op.offer_local_id = offer_local_id;
+    op.offer_data = offer_data;
+    op.price = price;
+    op.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
 
     bbtone_plugin_operation bop = op;
 
     custom_json_operation jop;
     jop.id = "bbtone";
     jop.json = fc::json::to_string(bop);
-    jop.required_posting_auths.insert(STEEMIT_INIT_MINER_NAME);
+    jop.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
 
     signed_transaction tx;
     tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( jop );
     tx.sign( init_key, _app->chain_database()->get_chain_id() );
     tx.validate();
-    _app->chain_database()->push_transaction(tx);
 
-    return;
+    _app->chain_database()->push_transaction(tx);
+    _app->p2p_node()->broadcast_transaction(tx);
+
+    map<string, string> res;
+    res.insert(pair<string,string>("tx_id", tx.id().str()));
+   // res.insert(pair<string,string>("tx_sig", fc::to_variant(tx.signatures[0])));
+
+    return res;
 }
 
 vector< offer_object > bbtone_api::get_service_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const {
@@ -201,8 +186,8 @@ vector< offer_object > bbtone_api::get_service_offers_of_given_operator_name(str
 
     return res;
 }
-
-std::map<string, string> bbtone_api::attach_service_request_to_service_offer(string offer_tx_id)const {
+/*
+std::map<string, string> bbtone_api::start_request(string issuer_operator_name, string target_operator_name, uint32_t target_offer_id, uint32_t request_ttl)const {
     std::map<string, string> res;
     res.insert(pair<string,string>("ok", "1"));
     res.insert(pair<string,string>("tx_id", "3333"));
@@ -237,7 +222,7 @@ std::map<string, string> bbtone_api::refund_and_close_request(string service_tx_
     res.insert(pair<string,string>("MOCK_tx_sig", "cacacacacacacacacacacacaca"));
     return res;
 }
-
+*/
 
 void bbtone_plugin::plugin_startup()
 {
