@@ -32,7 +32,6 @@ void offer_create_evaluator::do_apply( const offer_create_operation& o )
 {
     const auto& owner = _db.get_account( o.operator_name );
 
-    //TODO balances update
     _db.create<offer_object>( [&]( offer_object& obj )
     {
         obj.tx_time         = (time_point)_db.head_block_time();
@@ -50,6 +49,7 @@ void offer_cancel_evaluator::do_apply( const offer_cancel_operation& o )
     const auto & idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
     auto offer_it = idx.find(offer_id_type(o.offer_id));
     FC_ASSERT(offer_it != idx.end(), "offer not found");
+    FC_ASSERT(offer_it->operator_name == o.operator_name , "only offer owner can cancel offer");
 
     _db.modify<offer_object>(*offer_it, [&]( offer_object& obj )
     {
@@ -69,7 +69,11 @@ void request_start_evaluator::do_apply( const request_start_operation& o )
     FC_ASSERT(offer_it->state == offer_active, "offer not active");
     FC_ASSERT(o.credits <= offer_it->price, "request credits > offer price");
 
-    //TODO balances update
+    const auto& assignee = _db.get_account( offer_it->operator_name );
+
+    _db.adjust_balance( issuer, -o.credits );
+    _db.adjust_balance( assignee, o.credits );
+
     _db.create<request_object>( [&]( request_object& obj )
     {
         obj.tx_time = (time_point)_db.head_block_time();
@@ -81,23 +85,22 @@ void request_start_evaluator::do_apply( const request_start_operation& o )
         obj.user_pub_key = o.user_pub_key;
         obj.charge = asset(0, STEEM_SYMBOL);
         obj.state = request_preparing;
+        obj.error_code = 0;
     });
 }
 
 void request_accept_evaluator::do_apply( const request_accept_operation& o )
 {
-    const auto& assignee = _db.get_account( o.operator_name );
-
     const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
     const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
     FC_ASSERT(request_it != request_idx.end(), "request not found");
+    FC_ASSERT(request_it->state == request_preparing, "incorrect request state");
 
     const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
     auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
     FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
     FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
 
-    //TODO balances update
     _db.modify<request_object>(*request_it, [&]( request_object& obj )
     {
         obj.state = request_accepted;
@@ -106,18 +109,16 @@ void request_accept_evaluator::do_apply( const request_accept_operation& o )
 
 void request_ready_evaluator::do_apply( const request_ready_operation& o )
 {
-    const auto& assignee = _db.get_account( o.operator_name );
-
     const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
     const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
     FC_ASSERT(request_it != request_idx.end(), "request not found");
+    FC_ASSERT(request_it->state == request_accepted, "incorrect request state");
     FC_ASSERT(request_it->issuer_operator_name == o.operator_name, "only request issuer can ready");
 
     const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
     auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
     FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
 
-    //TODO balances update
     _db.modify<request_object>(*request_it, [&]( request_object& obj )
     {
         obj.state = request_ready;
@@ -126,18 +127,16 @@ void request_ready_evaluator::do_apply( const request_ready_operation& o )
 
 void request_inwork_evaluator::do_apply( const request_inwork_operation& o )
 {
-    const auto& assignee = _db.get_account( o.operator_name );
-
     const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
     const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
     FC_ASSERT(request_it != request_idx.end(), "request not found");
+    FC_ASSERT(request_it->state == request_ready, "incorrect request state");
 
     const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
     auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
     FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
     FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can inwork request");
 
-    //TODO balances update
     _db.modify<request_object>(*request_it, [&]( request_object& obj )
     {
         obj.state = request_inwork;
@@ -146,23 +145,23 @@ void request_inwork_evaluator::do_apply( const request_inwork_operation& o )
 
 void request_report_evaluator::do_apply( const request_report_operation& o )
 {
-    const auto& assignee = _db.get_account( o.operator_name );
-
     const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
     const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
     FC_ASSERT(request_it != request_idx.end(), "request not found");
+    FC_ASSERT(request_it->state == request_inwork, "incorrect request state");
 
     const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
     auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
     FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
-    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
+    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can report request");
 
-    //TODO balances update
-    /*
-    _db.modify<request_object>( [&]( request_object& obj )
+    FC_ASSERT(request_it->charge + o.charge <= request_it->max_credits, "charge > max_credits");
+
+    _db.modify<request_object>(*request_it, [&]( request_object& obj )
     {
+        obj.charge_data = o.charge_data;
+        obj.charge += o.charge;
     });
-    */
 }
 
 void request_end_evaluator::do_apply( const request_end_operation& o )
@@ -178,10 +177,17 @@ void request_end_evaluator::do_apply( const request_end_operation& o )
     FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
     FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
 
-    //TODO balances update
+    const auto& issuer = _db.get_account( request_it->issuer_operator_name );
+
+    if (request_it->charge < request_it->max_credits) { // if request not fully charged return remain credits
+        _db.adjust_balance( issuer, request_it->max_credits - request_it->charge );
+        _db.adjust_balance( assignee, -(request_it->max_credits - request_it->charge) );
+    }
+
     _db.modify<request_object>(*request_it, [&]( request_object& obj )
     {
         obj.state = request_completed;
+        obj.error_code = o.error_code;
     });
 }
 

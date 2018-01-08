@@ -88,6 +88,7 @@ struct request_report_operation : base_operation
     account_name_type   operator_name;
     uint64_t            target_request_id;
     asset               charge;
+    string              charge_data;
 
     flat_set<account_name_type> required_posting_auths;
 

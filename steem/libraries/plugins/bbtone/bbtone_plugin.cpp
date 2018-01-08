@@ -129,7 +129,7 @@ void bbtone_plugin::plugin_initialize(const boost::program_options::variables_ma
     ilog("Intializing bbtone plugin" );
     chain::database& db = database();
     add_plugin_index< offer_index >(db);
-    add_plugin_index< offer_index >(db);
+    add_plugin_index< request_index >(db);
 
     app().register_api_factory<bbtone_api>("bbtone_api");
 
@@ -138,7 +138,7 @@ void bbtone_plugin::plugin_initialize(const boost::program_options::variables_ma
 }
 
 
-map<string, string> bbtone_api::broadcast_service_offer(string operator_name, uint64_t offer_local_id,
+map<string, string> bbtone_api::create_service_offer(string operator_name, uint64_t offer_local_id,
                     string offer_data, uint32_t offer_ttl, asset price)const
 {
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
@@ -175,11 +175,106 @@ map<string, string> bbtone_api::broadcast_service_offer(string operator_name, ui
     return res;
 }
 
-vector< offer_object > bbtone_api::get_service_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const {
+vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string operator_name, uint32_t limit)const
+{
     vector< offer_object > res;
     const auto & idx = _app->chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_operator_name>();
-    auto startIt = idx.lower_bound(offering_operator_name);
-    auto endIt = idx.upper_bound(offering_operator_name);
+    auto startIt = idx.lower_bound(operator_name);
+    auto endIt = idx.upper_bound(operator_name);
+
+    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
+        res.push_back(*it);
+
+    return res;
+}
+
+std::map<string, string> bbtone_api::start_request(string issuer_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
+    asset credits, string user_id, fc::ecc::public_key user_pub_key)const
+{
+    string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
+    fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
+
+    request_start_operation op;
+    op.issuer_operator_name = issuer_operator_name;
+    op.target_offer_id = target_offer_id;
+    op.request_ttl = request_ttl;
+    op.credits = credits;
+    op.user_id = user_id;
+    op.user_pub_key = user_pub_key;
+    op.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
+
+    bbtone_plugin_operation bop = op;
+
+    custom_json_operation jop;
+    jop.id = "bbtone";
+    jop.json = fc::json::to_string(bop);
+    jop.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
+
+    signed_transaction tx;
+    tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
+    tx.operations.push_back( jop );
+    tx.sign( init_key, _app->chain_database()->get_chain_id() );
+    tx.validate();
+
+    _app->chain_database()->push_transaction(tx);
+    _app->p2p_node()->broadcast_transaction(tx);
+
+    std::map<string, string> res;
+    res.insert(pair<string,string>("tx_id", tx.id().str()));
+   // res.insert(pair<string,string>("tx_sig", fc::to_variant(tx.signatures[0])));
+
+    return res;
+}
+
+vector< request_object > bbtone_api::get_all_service_requests_by_issuer_operator_name(string issuer_operator_name, uint32_t limit)const
+{
+    vector< request_object > res;
+
+    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_issuer_operator_name>();
+    auto startIt = idx.lower_bound(issuer_operator_name);
+    auto endIt = idx.upper_bound(issuer_operator_name);
+
+    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
+        res.push_back(*it);
+
+    return res;
+}
+
+vector< request_object > bbtone_api::get_service_requests_by_state_and_issuer_operator_name(uint32_t state, string issuer_operator_name, uint32_t limit)const
+{
+    vector< request_object > res;
+
+    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_state_issuer_operator_name>();
+    auto startIt = idx.lower_bound(std::make_tuple(state, issuer_operator_name));
+    auto endIt = idx.upper_bound(std::make_tuple(state, issuer_operator_name));
+
+    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
+        res.push_back(*it);
+
+    return res;
+}
+
+vector< request_object > bbtone_api::get_all_service_requests_by_assignee_offer_id(uint64_t assignee_offer_id, uint32_t limit)const
+{
+    vector< request_object > res;
+
+    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_assignee_offer_id>();
+    auto startIt = idx.lower_bound(assignee_offer_id);
+    auto endIt = idx.upper_bound(assignee_offer_id);
+
+    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
+        res.push_back(*it);
+
+    return res;
+}
+
+vector< request_object > bbtone_api::get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const
+{
+    vector< request_object > res;
+
+    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_state_assignee_offer_id>();
+    auto startIt = idx.lower_bound(std::make_tuple(state, assignee_offer_id));
+    auto endIt = idx.upper_bound(std::make_tuple(state, assignee_offer_id));
 
     for (auto it = startIt; res.size() < limit && it != endIt; ++it)
         res.push_back(*it);
@@ -187,24 +282,6 @@ vector< offer_object > bbtone_api::get_service_offers_of_given_operator_name(str
     return res;
 }
 /*
-std::map<string, string> bbtone_api::start_request(string issuer_operator_name, string target_operator_name, uint32_t target_offer_id, uint32_t request_ttl)const {
-    std::map<string, string> res;
-    res.insert(pair<string,string>("ok", "1"));
-    res.insert(pair<string,string>("tx_id", "3333"));
-    res.insert(pair<string,string>("MOCK_tx_sig", "fefefefefefefefefefefefefef"));
-    return res;
-}
-
-vector< std::map<string, string> > bbtone_api::get_active_service_requests_of_given_operator_name(string requesting_operator_name)const {
-    vector< std::map<string, string> > res;
-    res = {
-        {{"tx_id","9444"}, {"expires", "14576849332"}, {"reserve", "60.65"}, {"MOCK_tx_sig", "cececececececececececece"}},
-        {{"tx_id","9945"}, {"expires", "14576849333"}, {"reserve", "62.35"}, {"MOCK_tx_sig", "dfdfdfdfdfdfdfdfdfdfdfdf"}},
-        {{"tx_id","9555"}, {"expires", "14573349333"}, {"reserve", "62.00"}, {"MOCK_tx_sig", "dadadadadadadadadadadada"}}
-    };
-    return res;
-}
-
 std::map<string, string> bbtone_api::attach_charge_to_service_request(string service_tx_id)const {
     std::map<string, string> res;
     res.insert(pair<string,string>("ok", "1"));

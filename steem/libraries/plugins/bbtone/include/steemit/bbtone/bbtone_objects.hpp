@@ -113,8 +113,10 @@ public:
     string              user_id;
     fc::ecc::public_key user_pub_key;
     asset               max_credits;
-    asset               charge;
+    asset               charge;         // actual charge count
+    string              charge_data;    // data provided from last request_report
     uint32_t            state;
+    uint32_t            error_code;     // ending code, 0 is ok;
 };
 
 typedef request_object::id_type request_id_type;
@@ -122,7 +124,9 @@ typedef request_object::id_type request_id_type;
 namespace request_index_tag {
     struct by_id;
     struct by_issuer_operator_name;
+    struct by_state_issuer_operator_name;
     struct by_assignee_offer_id;
+    struct by_state_assignee_offer_id;
 }
 
 typedef multi_index_container<
@@ -130,12 +134,27 @@ typedef multi_index_container<
     indexed_by<
         ordered_unique< tag< request_index_tag::by_id >, member< request_object, request_id_type, &request_object::id > >,
         ordered_non_unique< tag< request_index_tag::by_issuer_operator_name >, member< request_object, account_name_type, &request_object::issuer_operator_name > >,
-        ordered_non_unique< tag< request_index_tag::by_assignee_offer_id >, member< request_object, uint64_t, &request_object::assignee_offer_id > >
+        ordered_non_unique< tag< request_index_tag::by_assignee_offer_id >, member< request_object, uint64_t, &request_object::assignee_offer_id > >,
+        ordered_non_unique< tag< request_index_tag::by_state_issuer_operator_name >,
+            composite_key< request_object,
+                member< request_object, uint32_t, &request_object::state >,
+                member< request_object, account_name_type, &request_object::issuer_operator_name >
+            >,
+            composite_key_compare< std::greater< uint32_t >, std::less< string > >
+        >,
+        ordered_non_unique< tag< request_index_tag::by_state_assignee_offer_id >,
+            composite_key< request_object,
+                member< request_object, uint32_t, &request_object::state >,
+                member< request_object, uint64_t, &request_object::assignee_offer_id >
+            >,
+            composite_key_compare< std::greater< uint32_t >, std::greater< uint64_t> >
+        >
     >,
     allocator< request_object >
 > request_index;
 
 }} // namespace steemit::bbtone
+
 
 
 FC_REFLECT( steemit::bbtone::offer_object,
@@ -161,7 +180,9 @@ FC_REFLECT( steemit::bbtone::request_object,
     (user_pub_key)
     (max_credits)
     (charge)
+    (charge_data)
     (state)
+    (error_code)
 );
 CHAINBASE_SET_INDEX_TYPE( steemit::bbtone::request_object, steemit::bbtone::request_index );
 
