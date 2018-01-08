@@ -1,0 +1,17 @@
+offer:
+
+curl --data '{"jsonrpc": "2.0", "params": [4, "create_service_offer", ["operator1", "1", "2", "1000", "1 TESTS"]], "id":2, "method":"call"}' http://127.0.0.1:8090
+
+curl --data '{"jsonrpc": "2.0", "params": [4, "get_service_offers_by_operator_name", ["operator1", "10"]], "id":2, "method":"call"}' http://127.0.0.1:8090
+
+request:
+
+curl --data '{"jsonrpc": "2.0", "params": [4, "start_request", ["operator2", "0", "1000", "1.000 TESTS", "+79121212123", "fefefefefefefefefe"]], "id":2, "method":"call"}' http://127.0.0.1:8090
+
+curl --data '{"jsonrpc": "2.0", "params": [4, "get_all_service_requests_by_issuer_operator_name", ["operator2", "10"]], "id":2, "method":"call"}' http://127.0.0.1:8090
+
+curl --data '{"jsonrpc": "2.0", "params": [4, "get_service_requests_by_state_and_issuer_operator_name", ["1", "operator2", "10"]], "id":2, "method":"call"}' http://127.0.0.1:8090
+
+curl --data '{"jsonrpc": "2.0", "params": [4, "get_all_service_requests_by_assignee_offer_id", ["0", "10"]], "id":2, "method":"call"}' http://127.0.0.1:8090
+
+curl --data '{"jsonrpc": "2.0", "params": [4, "get_service_requests_by_state_and_assignee_offer_id", ["1", "0", "10"]], "id":2, "method":"call"}' http://127.0.0.1:8090
