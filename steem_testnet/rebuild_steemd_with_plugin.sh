@@ -1,5 +1,6 @@
 #!/bin/bash
- 
+set -x
+
 mkdir -p $HOME/steem/build
 cd $HOME/steem/
 
@@ -9,4 +10,4 @@ cp -R $HOME/bbt_steem/steem/libraries/plugins/bbtone $HOME/steem/libraries/plugi
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_STEEM_TESTNET=ON ..
 
 make steemd
-
+set +x

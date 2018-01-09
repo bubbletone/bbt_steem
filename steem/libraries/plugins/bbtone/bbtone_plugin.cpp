@@ -141,6 +141,7 @@ void bbtone_plugin::plugin_initialize(const boost::program_options::variables_ma
 map<string, string> bbtone_api::create_service_offer(string operator_name, uint64_t offer_local_id,
                     string offer_data, uint32_t offer_ttl, asset price)const
 {
+	 // plugin uses its own witness private key to sign messages
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
@@ -180,6 +181,9 @@ vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string op
     const auto & idx = _app->chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_operator_name>();
     auto startIt = idx.lower_bound(operator_name);
     auto endIt = idx.upper_bound(operator_name);
+
+	 // [TODO] add filtering by TTL of transactions, to search transactions only in liited part of blockchain and make search faster
+	 // [RESEARCH] - make default TTL of offer as consensus variable (votable using VESTS) 
 
     for (auto it = startIt; res.size() < limit && it != endIt; ++it)
         res.push_back(*it);
@@ -289,14 +293,17 @@ map <string, string> bbtone_api::accept_service_request(string operator_name, ui
     op.operator_name = operator_name;
     op.target_request_id = target_request_id;
     op.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
+	 // [TODO] - make common parameters for all transactions moved to separate hz: class, struct, base transaction type - do it right way
 
     bbtone_plugin_operation bop = op;
 
     custom_json_operation jop;
+	 // [TODO] - look for storage sizr for jop.id - maybe make it "insigned int" type
     jop.id = "bbtone";
     jop.json = fc::json::to_string(bop);
     jop.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
 
+	 // [TODO] - move "apply_to_database" to separate function, add debug log after any significant operation or error
     signed_transaction tx;
     tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( jop );

@@ -84,6 +84,9 @@ public:
         wlog( "on bbtone api startup" );
     }
 
+	 // [TODO] rename "operator_name" parameter in each function to exact role, for example "offering_operator" and "requesting_operator",
+	 // It will be useful to grep code, looking for all operations of needed role
+
     map<string, string> create_service_offer(string operator_name, uint64_t offer_local_id,
         string offer_data, uint32_t offer_ttl, asset price)const;
     vector< offer_object > get_service_offers_by_operator_name(string operator_name, uint32_t limit)const;
