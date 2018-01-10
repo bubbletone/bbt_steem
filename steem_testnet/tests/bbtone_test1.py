@@ -104,16 +104,10 @@ REQUEST_OFFER_PRICE = o['price']
 print("\n[#] Requesting operator '{}' choose one 'offer' transaction(tx_id: {}, price: {})".format(REQUESTING_OPERATOR, REQUEST_OFFER_ID, REQUEST_OFFER_PRICE))
 
 
-
 # check if there is enough available funds on requesting operator's balance
-
 res = get_api_response({'id': 1, 'params': [0, 'get_accounts', [[REQUESTING_OPERATOR]]]})['result']
 REQUESTING_OPERATOR_BALANCE = res[0]['balance']
 print("[STAGE] The balance of requesting operator '{}': {}\n".format(REQUESTING_OPERATOR, REQUESTING_OPERATOR_BALANCE))
-
-
-
-
 
 
 
@@ -128,8 +122,15 @@ CUSTOMER_PUBLIC_KEY_HEX = wif_to_hex(CUSTOMER_PUBLIC_KEY_WIF)
 print("\n[#] Requesting operator '{}' attaches service request for customer '{}' (public_key: {}), using received offer (id: {}) and trying to send (credits: {}) with it"
       .format(REQUESTING_OPERATOR, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX, REQUEST_OFFER_ID, REQUEST_OFFER_PRICE))
 
-res = get_api_response({'id': 1, 'params': [API_NUM, 'start_request', [REQUESTING_OPERATOR, REQUEST_OFFER_ID, REQUEST_TRANSACTION_TTL, REQUEST_OFFER_PRICE, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX]]})['result']
-pprint(res)
+res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_request_to_service_offer', [REQUESTING_OPERATOR, REQUEST_OFFER_ID, REQUEST_TRANSACTION_TTL, REQUEST_OFFER_PRICE, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX]]})['result']
+REQUEST_TX = res
+
+
+# check balance after attaching request
+
+# res = get_api_response({'id': 1, 'params': [0, 'get_accounts', [[REQUESTING_OPERATOR]]]})['result']
+# REQUESTING_OPERATOR_BALANCE = res[0]['balance']
+# print("[STAGE] Now, the balance of requesting operator '{}': {}\n".format(REQUESTING_OPERATOR, REQUESTING_OPERATOR_BALANCE))
 
 exit(0);
 

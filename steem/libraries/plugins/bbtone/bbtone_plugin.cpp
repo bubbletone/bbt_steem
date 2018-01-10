@@ -79,9 +79,9 @@ bbtone_plugin_impl::bbtone_plugin_impl( bbtone_plugin& _plugin )
 {
     _custom_operation_interpreter = std::make_shared< generic_custom_operation_interpreter< steemit::bbtone::bbtone_plugin_operation > >( database() );
 
-    _custom_operation_interpreter->register_evaluator< offer_create_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< create_service_offer_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< offer_cancel_evaluator >( &_self );
-    _custom_operation_interpreter->register_evaluator< request_start_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< attach_request_to_service_offer_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< request_accept_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< request_ready_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< request_inwork_evaluator >( &_self );
@@ -145,7 +145,7 @@ map<string, string> bbtone_api::create_service_offer(string operator_name, uint6
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
-    offer_create_operation op;
+    create_service_offer_operation op;
     op.operator_name = operator_name;
     op.offer_ttl = offer_ttl;
     op.offer_local_id = offer_local_id;
@@ -191,13 +191,13 @@ vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string op
     return res;
 }
 
-std::map<string, string> bbtone_api::start_request(string issuer_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
+std::map<string, string> bbtone_api::attach_request_to_service_offer(string issuer_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
     asset credits, string user_id, fc::ecc::public_key user_pub_key)const
 {
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
-    request_start_operation op;
+    attach_request_to_service_offer_operation op;
     op.issuer_operator_name = issuer_operator_name;
     op.target_offer_id = target_offer_id;
     op.request_ttl = request_ttl;

@@ -15,7 +15,7 @@ namespace steemit { namespace bbtone {
 
 using namespace steemit::protocol;
 
-struct offer_create_operation : base_operation
+struct create_service_offer_operation : base_operation
 {
     account_name_type   operator_name;
     uint32_t            offer_ttl; // TTL of offer in seconds
@@ -38,7 +38,7 @@ struct offer_cancel_operation : base_operation
     void get_required_posting_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_posting_auths ) a.insert(i); }
 };
 
-struct request_start_operation : base_operation
+struct attach_request_to_service_offer_operation : base_operation
 {
     account_name_type   issuer_operator_name;
     uint64_t            target_offer_id;
@@ -108,10 +108,10 @@ struct request_end_operation : base_operation
 
 typedef fc::static_variant<
 
-         offer_create_operation,
+         create_service_offer_operation,
          offer_cancel_operation,
 
-         request_start_operation,
+         attach_request_to_service_offer_operation,
          request_accept_operation,
          request_ready_operation,
          request_inwork_operation,
@@ -120,10 +120,10 @@ typedef fc::static_variant<
 
       > bbtone_plugin_operation;
 
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_create );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, create_service_offer );
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_cancel );
 
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_start );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_request_to_service_offer );
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_accept );
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_ready );
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_inwork );
@@ -132,7 +132,7 @@ DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_end );
 
 } } // steemit::bbtone
 
-FC_REFLECT( steemit::bbtone::offer_create_operation,
+FC_REFLECT( steemit::bbtone::create_service_offer_operation,
     (operator_name)
     (offer_ttl)
     (offer_local_id)
@@ -147,7 +147,7 @@ FC_REFLECT( steemit::bbtone::offer_cancel_operation,
     (required_posting_auths)
 );
 
-FC_REFLECT( steemit::bbtone::request_start_operation,
+FC_REFLECT( steemit::bbtone::attach_request_to_service_offer_operation,
     (issuer_operator_name)
     (target_offer_id)
     (request_ttl)

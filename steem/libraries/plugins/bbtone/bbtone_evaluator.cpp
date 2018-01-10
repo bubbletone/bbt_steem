@@ -28,7 +28,7 @@ using namespace steemit::protocol;
 using fc::uint128_t;
 using fc::api;
 
-void offer_create_evaluator::do_apply( const offer_create_operation& o )
+void create_service_offer_evaluator::do_apply( const create_service_offer_operation& o )
 {
     const auto& owner = _db.get_account( o.operator_name );
 
@@ -57,7 +57,7 @@ void offer_cancel_evaluator::do_apply( const offer_cancel_operation& o )
     });
 }
 
-void request_start_evaluator::do_apply( const request_start_operation& o )
+void attach_request_to_service_offer_evaluator::do_apply( const attach_request_to_service_offer_operation& o )
 {
     const auto& issuer = _db.get_account( o.issuer_operator_name );
     FC_ASSERT(issuer.balance >= o.credits, "not enough balance");
