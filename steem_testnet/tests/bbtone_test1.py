@@ -82,7 +82,6 @@ print("[STAGE] broadcasted offer from operator_id: {}, tx_id: {}\n".format(OFFER
 
 
 
-
 SEARCH_LIMIT = 42
 print("""\n[#] Operator '{}' (that will be an requesting operator in future) searches N < {} suitable offers in blockchain"""
      .format(OFFERING_OPERATOR, SEARCH_LIMIT))
@@ -134,19 +133,18 @@ print("[STAGE] Now, the balance of requesting operator '{}': {}\n".format(REQUES
 
 print("\n[#] Offering operator '{}' permanently monitors blockchain, looking for active service requests, attached to its offers...".format(OFFERING_OPERATOR))
 REQUESTS_LIMIT = 42
-res = get_api_response({'id': 1, 'params': [API_NUM, 'get_service_requests_by_operator_name', [OFFERING_OPERATOR, REQUESTS_LIMIT]]})['result']
+res = get_api_response({'id': 1, 'params': [API_NUM, 'get_active_service_requests_attached_to_offers_of_given_operator_name', [OFFERING_OPERATOR, REQUESTS_LIMIT]]})['result']
 print("\n[#] Offering operator '{}' found {} active requests: [{}]".format(OFFERING_OPERATOR, len(res), " ". join(str('(id: ' + str(x['id']) + ', user_id: "' + x['user_id'] + '", max_credits: ' + x['max_credits']) for x in res)))
 
 SERVICE_REQUEST_TX = random.choice(res)
 
+
+print("\n[#] Offering operator '{}' chooses one service request(tx_id: {}, max_credits: {}), attached to one of his offers".format(OFFERING_OPERATOR, SERVICE_REQUEST_TX['id'], SERVICE_REQUEST_TX['max_credits']))
 pprint(SERVICE_REQUEST_TX)
 exit(0);
 
 
-
-
-print("\n[#] Operator-assignee choose one service request(tx_id: {}, reserve: {}), attached to one of his offers and attach 'charge' transaction to it".format(SERVICE_REQUEST_TX['tx_id'], SERVICE_REQUEST_TX['reserve']))
-res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_service_request_to_service_offer', [SERVICE_REQUEST_TX['tx_id']]]})['result']
+res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_charge_to_service', [SERVICE_REQUEST_TX['tx_id']]]})['result']
 
 CHARGE_TX = res
 
@@ -155,22 +153,4 @@ res = get_api_response({'id': 1, 'params': [API_NUM, 'refund_and_close_request',
 
 # pprint(res)
 exit(0)
-
-
-#
-
-# print("\n\n" + offer_tx_id + "\n\n")
-
-# curl --data '{"jsonrpc": "2.0", "params": [4, "get_active_service_requests_of_given_account", [1]], "id":2, "method":"call"}' http://127.0.0.1:8090
-
-# we have two accounts - "operator_assignee" and "operator_requestor"
-
-# "operator_assignee" publish offers in blockchain
-# "operator_requestor" search for offers in blockchain, chooses one, and attach its request to it
-# "operator_assignee" search for his offers with attached requests on his in blockchain, chooses one, and attach his "charge" transaction to it
-# "operator_requestor" waits for charge and attach "refund" transaction to "charge"
-
-# get id of bbtone_api (usually 4)
-
-
 

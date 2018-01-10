@@ -91,11 +91,10 @@ public:
         string offer_data, uint32_t offer_ttl, asset price)const;
     vector< offer_object > get_service_offers_by_operator_name(string operator_name, uint32_t limit)const;
 
-    std::map<string, string> attach_request_to_service_offer(string issuer_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
+    std::map<string, string> attach_request_to_service_offer(string offering_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
         asset credits, string user_id, fc::ecc::public_key user_pub_key)const;
-    vector< request_object > get_service_requests_by_operator_name(string issuer_operator_name, uint32_t limit)const;
-    vector< request_object > get_service_requests_by_state_and_issuer_operator_name(uint32_t state, string issuer_operator_name, uint32_t limit)const;
-    vector< request_object > get_all_service_requests_by_assignee_offer_id(uint64_t assignee_offer_id, uint32_t limit)const;
+    vector< request_object > get_active_service_requests_attached_to_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const;
+    vector< request_object > get_service_requests_by_offer_id(uint64_t assignee_offer_id, uint32_t limit)const;
     vector< request_object > get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const;
     map <string, string> accept_service_request(string operator_name, uint64_t target_request_id)const;
     map <string, string> ready_service_request(string operator_name, uint64_t target_request_id)const;
@@ -113,10 +112,8 @@ FC_API( steemit::bbtone::bbtone_api,
     (create_service_offer)
     (get_service_offers_by_operator_name)
     (attach_request_to_service_offer)
-    (get_service_requests_by_operator_name)
-    (get_service_requests_by_state_and_issuer_operator_name)
-    (get_all_service_requests_by_assignee_offer_id)
-    (get_service_requests_by_state_and_assignee_offer_id)
+    (get_active_service_requests_attached_to_offers_of_given_operator_name)
+    (get_service_requests_by_offer_id)
     (accept_service_request)
     (ready_service_request)
     (inwork_service_request)

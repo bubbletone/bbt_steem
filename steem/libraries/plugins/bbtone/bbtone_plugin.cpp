@@ -182,23 +182,20 @@ vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string op
     auto startIt = idx.lower_bound(operator_name);
     auto endIt = idx.upper_bound(operator_name);
 
-	 // [TODO] add filtering by TTL of transactions, to search transactions only in liited part of blockchain and make search faster
-	 // [RESEARCH] - make default TTL of offer as consensus variable (votable using VESTS) 
-
     for (auto it = startIt; res.size() < limit && it != endIt; ++it)
         res.push_back(*it);
 
     return res;
 }
 
-std::map<string, string> bbtone_api::attach_request_to_service_offer(string issuer_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
+std::map<string, string> bbtone_api::attach_request_to_service_offer(string offering_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
     asset credits, string user_id, fc::ecc::public_key user_pub_key)const
 {
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
     attach_request_to_service_offer_operation op;
-    op.issuer_operator_name = issuer_operator_name;
+    op.offering_operator_name = offering_operator_name;
     op.target_offer_id = target_offer_id;
     op.request_ttl = request_ttl;
     op.credits = credits;
@@ -228,13 +225,13 @@ std::map<string, string> bbtone_api::attach_request_to_service_offer(string issu
     return res;
 }
 
-vector< request_object > bbtone_api::get_service_requests_by_operator_name(string issuer_operator_name, uint32_t limit)const
+vector< request_object > bbtone_api::get_active_service_requests_attached_to_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const
 {
     vector< request_object > res;
 
-    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_issuer_operator_name>();
-    auto startIt = idx.lower_bound(issuer_operator_name);
-    auto endIt = idx.upper_bound(issuer_operator_name);
+    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_offering_operator_name>();
+    auto startIt = idx.lower_bound(offering_operator_name);
+    auto endIt = idx.upper_bound(offering_operator_name);
 
     for (auto it = startIt; res.size() < limit && it != endIt; ++it)
         res.push_back(*it);
@@ -242,21 +239,7 @@ vector< request_object > bbtone_api::get_service_requests_by_operator_name(strin
     return res;
 }
 
-vector< request_object > bbtone_api::get_service_requests_by_state_and_issuer_operator_name(uint32_t state, string issuer_operator_name, uint32_t limit)const
-{
-    vector< request_object > res;
-
-    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_state_issuer_operator_name>();
-    auto startIt = idx.lower_bound(std::make_tuple(state, issuer_operator_name));
-    auto endIt = idx.upper_bound(std::make_tuple(state, issuer_operator_name));
-
-    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
-        res.push_back(*it);
-
-    return res;
-}
-
-vector< request_object > bbtone_api::get_all_service_requests_by_assignee_offer_id(uint64_t assignee_offer_id, uint32_t limit)const
+vector< request_object > bbtone_api::get_service_requests_by_offer_id(uint64_t assignee_offer_id, uint32_t limit)const
 {
     vector< request_object > res;
 
@@ -270,19 +253,6 @@ vector< request_object > bbtone_api::get_all_service_requests_by_assignee_offer_
     return res;
 }
 
-vector< request_object > bbtone_api::get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const
-{
-    vector< request_object > res;
-
-    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_state_assignee_offer_id>();
-    auto startIt = idx.lower_bound(std::make_tuple(state, assignee_offer_id));
-    auto endIt = idx.upper_bound(std::make_tuple(state, assignee_offer_id));
-
-    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
-        res.push_back(*it);
-
-    return res;
-}
 
 map <string, string> bbtone_api::accept_service_request(string operator_name, uint64_t target_request_id)const
 {
@@ -293,17 +263,14 @@ map <string, string> bbtone_api::accept_service_request(string operator_name, ui
     op.operator_name = operator_name;
     op.target_request_id = target_request_id;
     op.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
-	 // [TODO] - make common parameters for all transactions moved to separate hz: class, struct, base transaction type - do it right way
 
     bbtone_plugin_operation bop = op;
 
     custom_json_operation jop;
-	 // [TODO] - look for storage sizr for jop.id - maybe make it "insigned int" type
     jop.id = "bbtone";
     jop.json = fc::json::to_string(bop);
     jop.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
 
-	 // [TODO] - move "apply_to_database" to separate function, add debug log after any significant operation or error
     signed_transaction tx;
     tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
     tx.operations.push_back( jop );
