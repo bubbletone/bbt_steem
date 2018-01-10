@@ -6,6 +6,9 @@ import websocket
 import socket
 from websocket import create_connection
 
+import base58
+import binascii
+
 import random
 import time
 
@@ -16,7 +19,6 @@ def get_new_max_random_offer_id():
     random.seed(time.time())
     return int(random.random() * 0xFFFFFFFFFFFFFFFF)
 
-    
 
 BBT_NODE_WS_ENDPOINT = 'ws://10.197.197.59:8090'
 # websocket.enableTrace(True)
@@ -42,7 +44,7 @@ def get_api_response(data):
         print("Error getting ws response from {}: {}".format(BBT_NODE_WS_ENDPOINT, e))
     finally:
         ws.close()
-    return None 
+    return {}
 
 # we need to get ID of custom bbtone_api and use it in request to API functions later
 print("\n[#] Any participant receive API id on node, checking if it's active")
@@ -59,6 +61,7 @@ OFFER_TRANSACTION_TTL = 100 # 100 sec until offer is "alive"
 
 OFFERING_OPERATOR = "initminer"
 OFFER_ID_1=get_new_max_random_offer_id()
+OFFER_PRICE = "0.111 TESTS"
 
 print("""\n[#] Operator '{}' (that will be an operator-assignee in future) broadcasts a transaction with service offer (with id: {}), offering service to other operators"""
      .format(OFFERING_OPERATOR, OFFER_ID_1))
@@ -69,7 +72,7 @@ res = get_api_response({'id': 2, 'params':  [API_NUM, 'create_service_offer',
                                             OFFER_ID_1,
                                             '0xHEX_DIFFIEHELLMAN_HANDSHAKE',
                                             OFFER_TRANSACTION_TTL,
-                                            "0.1 TESTS"
+                                            OFFER_PRICE
                                             ]]})['result']
 
 print("[STAGE] broadcasted offer from operator_id: {}, tx_id: {}\n".format(OFFERING_OPERATOR, res['tx_id']))
@@ -92,29 +95,58 @@ print("[STAGE] found {} offers from operator '{}': [{}]\n".format(len(res), OFFE
 REQUESTING_OPERATOR = "initminer"
 
 REQUEST_TRANSACTION_TTL = 600
-o =random.choice(res)
-OFFER_ID = o['id']
-OFFER_PRICE = o['price']
+o = random.choice(res)
+REQUEST_OFFER_ID = o['id']
 
-print("\n[#] Requesting operator '{}' choose one 'offer' transaction(tx_id: {}, price: {})".format(REQUESTING_OPERATOR, OFFER_ID, OFFER_PRICE))
 
-CUSTOMER_NAME = 'Vasiliy'
+# [!!!!!!] PRICE, sent MUST BE exact string, as was placed in offer, f.ex. "0.1 TESTS" и "0.100 TESTS" are DIFFERENT
+REQUEST_OFFER_PRICE = o['price']
+print("\n[#] Requesting operator '{}' choose one 'offer' transaction(tx_id: {}, price: {})".format(REQUESTING_OPERATOR, REQUEST_OFFER_ID, REQUEST_OFFER_PRICE))
+
+
+
+# check if there is enough available funds on requesting operator's balance
+
+res = get_api_response({'id': 1, 'params': [0, 'get_accounts', [[REQUESTING_OPERATOR]]]})['result']
+REQUESTING_OPERATOR_BALANCE = res[0]['balance']
+print("[STAGE] The balance of requesting operator '{}': {}\n".format(REQUESTING_OPERATOR, REQUESTING_OPERATOR_BALANCE))
+
+
+
+
+
+
+
+CUSTOMER_NAME = 'vasiliy'
 CUSTOMER_PUBLIC_KEY_WIF = 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4' # the one from "initminer"
 
-import base58
-import binascii
-# using this snippet to convert base58(WIF) key format in config.ini to hex:
-CUSTOMER_PUBLIC_KEY_HEX = binascii.b2a_hex(base58.b58decode(CUSTOMER_PUBLIC_KEY_WIF)).decode("ascii")
-# base58.b58decode(b'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4').encode("hex")
-# '287e2ccc00a2040a7a97ae8544168065e7bd197fa43a238344f76fc6992ef1d780170525c81f6d'
 
-print("\n[#] Requesting operator '{}' attaches service request for customer '{}' (public_key: {}), using received offer id {} and trying to send {} credits with it"
-      .format(REQUESTING_OPERATOR, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX, OFFER_ID, OFFER_PRICE))
+wif_to_hex = lambda wif_key: binascii.b2a_hex(base58.b58decode(wif_key)).decode("ascii")
+# for example: 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4': '287e2ccc00a2040a7a97ae8544168065e7bd197fa43a238344f76fc6992ef1d780170525c81f6d'
+CUSTOMER_PUBLIC_KEY_HEX = wif_to_hex(CUSTOMER_PUBLIC_KEY_WIF)
 
-res = get_api_response({'id': 1, 'params': [API_NUM, 'start_request', [REQUESTING_OPERATOR, int(OFFER_ID), REQUEST_TRANSACTION_TTL, OFFER_PRICE, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX]]})['result']
+print("\n[#] Requesting operator '{}' attaches service request for customer '{}' (public_key: {}), using received offer (id: {}) and trying to send (credits: {}) with it"
+      .format(REQUESTING_OPERATOR, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX, REQUEST_OFFER_ID, REQUEST_OFFER_PRICE))
+
+res = get_api_response({'id': 1, 'params': [API_NUM, 'start_request', [REQUESTING_OPERATOR, REQUEST_OFFER_ID, REQUEST_TRANSACTION_TTL, REQUEST_OFFER_PRICE, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX]]})['result']
 pprint(res)
 
 exit(0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 print("\n[#] Operator-assignee is monitoring blockchain, looking for active service request for him(search transactions, attached to his offers)")
 res = get_api_response({'id': 1, 'params': [API_NUM, 'get_active_service_requests_of_given_operator_id', [OFFERING_OPERATOR]]})['result']
