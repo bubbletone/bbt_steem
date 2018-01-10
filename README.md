@@ -90,23 +90,25 @@ $HOME/bbt_steem/steem_testnet/testrun_steemd.sh
 ```
 
 #### Info
-Now we can test working node, sending several request to it. Full requests pack for test is placed in **steem_testnet/tests/bbtone_test1.py**. 
-*steemd* with config runs as websockets server, opened on 8090 port (look into steemd logs for exact info). So testing one singel API can be made with simple **curl** request. 
 
-#### Run
- \# for example
+Now we can test working node, sending several request to it. Full requests pack for test is placed in **steem_testnet/tests/bbtone_test1.py**. *steemd* with config runs as websockets server, opened on 8090 port (look into steemd logs for exact info). So testing one singel API can be made with simple **curl** request.
+  
+  
 
 ```bash
-curl --data '{"jsonrpc": "2.0", "params": [4, "get_service_offers_of_given_operator_id", [1]], "id":2, "method":"call"}' http://127.0.0.1:8090
-
 # first, you need to get API ID, assigned by steemd to bbt_plugin_api (number of APIs family). 
-# If result is something like *{"id":1,"result":4}* - then API ID for bbtone_api is 4.
-# You should use this number in all bbtone_api calls in future.
- 
-curl --data '{"jsonrpc": "2.0", "params": [**1**, "get_api_by_name", ["bbtone_api"]], "id":1, "method":"call"}' http://127.0.0.1:8090
+# Be careful, first API_NUM == 1 (first param in "params")
+curl --data '{"jsonrpc": "2.0", "params": [1, "get_api_by_name", ["bbtone_api"]], "id":1, "method":"call"}' http://127.0.0.1:8090
+
+# If result is something like '{"id": 1, "result": 4}' - then API_NUM for bbtone_api is '4'.
+# You should use this API_NUM in all bbtone_api calls in future as first argument in "params"
+
+# for example: 
+curl --data '{"jsonrpc": "2.0", "params": [4, "get_service_offers_by_operator_name", ["initminer", 42]], "id":2, "method":"call"}' http://127.0.0.1:8090
+
 ```
 
-
+**API interfaces and parameters can be found in bbtone_plugin.hpp/bbtone_plugin.cpp**
 
 
 

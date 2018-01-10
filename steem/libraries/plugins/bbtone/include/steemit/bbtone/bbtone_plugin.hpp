@@ -93,7 +93,7 @@ public:
 
     std::map<string, string> attach_request_to_service_offer(string issuer_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
         asset credits, string user_id, fc::ecc::public_key user_pub_key)const;
-    vector< request_object > get_all_service_requests_by_issuer_operator_name(string issuer_operator_name, uint32_t limit)const;
+    vector< request_object > get_service_requests_by_operator_name(string issuer_operator_name, uint32_t limit)const;
     vector< request_object > get_service_requests_by_state_and_issuer_operator_name(uint32_t state, string issuer_operator_name, uint32_t limit)const;
     vector< request_object > get_all_service_requests_by_assignee_offer_id(uint64_t assignee_offer_id, uint32_t limit)const;
     vector< request_object > get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const;
@@ -113,7 +113,7 @@ FC_API( steemit::bbtone::bbtone_api,
     (create_service_offer)
     (get_service_offers_by_operator_name)
     (attach_request_to_service_offer)
-    (get_all_service_requests_by_issuer_operator_name)
+    (get_service_requests_by_operator_name)
     (get_service_requests_by_state_and_issuer_operator_name)
     (get_all_service_requests_by_assignee_offer_id)
     (get_service_requests_by_state_and_assignee_offer_id)

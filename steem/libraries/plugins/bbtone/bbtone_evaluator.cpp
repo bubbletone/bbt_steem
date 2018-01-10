@@ -69,10 +69,14 @@ void attach_request_to_service_offer_evaluator::do_apply( const attach_request_t
     FC_ASSERT(offer_it->state == offer_active, "offer not active");
     FC_ASSERT(o.credits <= offer_it->price, "request credits > offer price");
 
-    const auto& assignee = _db.get_account( offer_it->operator_name );
 
     _db.adjust_balance( issuer, -o.credits );
-    _db.adjust_balance( assignee, o.credits );
+
+
+	// [TODO] funds must be "locked" in request, and allowed to return only by "refund" transaction
+    // const auto& assignee = _db.get_account( offer_it->operator_name );
+    // _db.adjust_balance( assignee, o.credits );
+
 
     _db.create<request_object>( [&]( request_object& obj )
     {

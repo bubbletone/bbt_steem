@@ -228,7 +228,7 @@ std::map<string, string> bbtone_api::attach_request_to_service_offer(string issu
     return res;
 }
 
-vector< request_object > bbtone_api::get_all_service_requests_by_issuer_operator_name(string issuer_operator_name, uint32_t limit)const
+vector< request_object > bbtone_api::get_service_requests_by_operator_name(string issuer_operator_name, uint32_t limit)const
 {
     vector< request_object > res;
 

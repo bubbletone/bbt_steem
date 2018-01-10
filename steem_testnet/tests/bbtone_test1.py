@@ -61,7 +61,7 @@ OFFER_TRANSACTION_TTL = 100 # 100 sec until offer is "alive"
 
 OFFERING_OPERATOR = "initminer"
 OFFER_ID_1=get_new_max_random_offer_id()
-OFFER_PRICE = "0.111 TESTS"
+OFFER_PRICE = "%.3f TESTS" % random.random()
 
 print("""\n[#] Operator '{}' (that will be an operator-assignee in future) broadcasts a transaction with service offer (with id: {}), offering service to other operators"""
      .format(OFFERING_OPERATOR, OFFER_ID_1))
@@ -127,32 +127,23 @@ REQUEST_TX = res
 
 
 # check balance after attaching request
+res = get_api_response({'id': 1, 'params': [0, 'get_accounts', [[REQUESTING_OPERATOR]]]})['result']
+REQUESTING_OPERATOR_BALANCE = res[0]['balance']
+print("[STAGE] Now, the balance of requesting operator '{}': {}\n".format(REQUESTING_OPERATOR, REQUESTING_OPERATOR_BALANCE))
 
-# res = get_api_response({'id': 1, 'params': [0, 'get_accounts', [[REQUESTING_OPERATOR]]]})['result']
-# REQUESTING_OPERATOR_BALANCE = res[0]['balance']
-# print("[STAGE] Now, the balance of requesting operator '{}': {}\n".format(REQUESTING_OPERATOR, REQUESTING_OPERATOR_BALANCE))
 
+print("\n[#] Offering operator '{}' permanently monitors blockchain, looking for active service requests, attached to its offers...".format(OFFERING_OPERATOR))
+REQUESTS_LIMIT = 42
+res = get_api_response({'id': 1, 'params': [API_NUM, 'get_service_requests_by_operator_name', [OFFERING_OPERATOR, REQUESTS_LIMIT]]})['result']
+print("\n[#] Offering operator '{}' found {} active requests: [{}]".format(OFFERING_OPERATOR, len(res), " ". join(str('(id: ' + str(x['id']) + ', user_id: "' + x['user_id'] + '", max_credits: ' + x['max_credits']) for x in res)))
+
+SERVICE_REQUEST_TX = random.choice(res)
+
+pprint(SERVICE_REQUEST_TX)
 exit(0);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-print("\n[#] Operator-assignee is monitoring blockchain, looking for active service request for him(search transactions, attached to his offers)")
-res = get_api_response({'id': 1, 'params': [API_NUM, 'get_active_service_requests_of_given_operator_id', [OFFERING_OPERATOR]]})['result']
-
-SERVICE_REQUEST_TX = res[0]
 
 print("\n[#] Operator-assignee choose one service request(tx_id: {}, reserve: {}), attached to one of his offers and attach 'charge' transaction to it".format(SERVICE_REQUEST_TX['tx_id'], SERVICE_REQUEST_TX['reserve']))
 res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_service_request_to_service_offer', [SERVICE_REQUEST_TX['tx_id']]]})['result']
