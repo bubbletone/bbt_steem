@@ -93,61 +93,7 @@ void attach_request_to_service_offer_evaluator::do_apply( const attach_request_t
     });
 }
 
-void request_accept_evaluator::do_apply( const request_accept_operation& o )
-{
-    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
-    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
-    FC_ASSERT(request_it != request_idx.end(), "request not found");
-    FC_ASSERT(request_it->state == request_preparing, "incorrect request state");
-
-    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
-    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
-    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
-    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
-
-    _db.modify<request_object>(*request_it, [&]( request_object& obj )
-    {
-        obj.state = request_accepted;
-    });
-}
-
-void request_ready_evaluator::do_apply( const request_ready_operation& o )
-{
-    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
-    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
-    FC_ASSERT(request_it != request_idx.end(), "request not found");
-    FC_ASSERT(request_it->state == request_accepted, "incorrect request state");
-    FC_ASSERT(request_it->issuer_operator_name == o.operator_name, "only request issuer can ready");
-
-    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
-    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
-    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
-
-    _db.modify<request_object>(*request_it, [&]( request_object& obj )
-    {
-        obj.state = request_ready;
-    });
-}
-
-void request_inwork_evaluator::do_apply( const request_inwork_operation& o )
-{
-    const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
-    const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
-    FC_ASSERT(request_it != request_idx.end(), "request not found");
-    FC_ASSERT(request_it->state == request_ready, "incorrect request state");
-
-    const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
-    auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
-    FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
-    FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can inwork request");
-
-    _db.modify<request_object>(*request_it, [&]( request_object& obj )
-    {
-        obj.state = request_inwork;
-    });
-}
-
-void request_report_evaluator::do_apply( const request_report_operation& o )
+void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_to_service_request_operation& o )
 {
     const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
     const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
@@ -168,7 +114,7 @@ void request_report_evaluator::do_apply( const request_report_operation& o )
     });
 }
 
-void request_end_evaluator::do_apply( const request_end_operation& o )
+void attach_refund_to_service_request_evaluator::do_apply( const attach_refund_to_service_request_operation& o )
 {
     const auto& assignee = _db.get_account( o.operator_name );
 

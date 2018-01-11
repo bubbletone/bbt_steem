@@ -114,7 +114,7 @@ public:
     fc::ecc::public_key user_pub_key;
     asset               max_credits;
     asset               charge;         // actual charge count
-    string              charge_data;    // data provided from last request_report
+    string              charge_data;    // data provided from last attach_charge_to_service_request
     uint32_t            state;
     uint32_t            error_code;     // ending code, 0 is ok;
 };

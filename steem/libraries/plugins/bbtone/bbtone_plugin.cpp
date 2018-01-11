@@ -82,11 +82,8 @@ bbtone_plugin_impl::bbtone_plugin_impl( bbtone_plugin& _plugin )
     _custom_operation_interpreter->register_evaluator< create_service_offer_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< offer_cancel_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< attach_request_to_service_offer_evaluator >( &_self );
-    _custom_operation_interpreter->register_evaluator< request_accept_evaluator >( &_self );
-    _custom_operation_interpreter->register_evaluator< request_ready_evaluator >( &_self );
-    _custom_operation_interpreter->register_evaluator< request_inwork_evaluator >( &_self );
-    _custom_operation_interpreter->register_evaluator< request_report_evaluator >( &_self );
-    _custom_operation_interpreter->register_evaluator< request_end_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< attach_charge_to_service_request_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< attach_refund_to_service_request_evaluator >( &_self );
 
     database().set_custom_operation_interpreter( _self.plugin_name(), _custom_operation_interpreter );
     return;
@@ -195,7 +192,7 @@ std::map<string, string> bbtone_api::attach_request_to_service_offer(string offe
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
     attach_request_to_service_offer_operation op;
-    op.offering_operator_name = offering_operator_name;
+    op.issuer_operator_name = offering_operator_name;
     op.target_offer_id = target_offer_id;
     op.request_ttl = request_ttl;
     op.credits = credits;
@@ -229,7 +226,7 @@ vector< request_object > bbtone_api::get_active_service_requests_attached_to_off
 {
     vector< request_object > res;
 
-    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_offering_operator_name>();
+    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_issuer_operator_name>();
     auto startIt = idx.lower_bound(offering_operator_name);
     auto endIt = idx.upper_bound(offering_operator_name);
 
@@ -254,105 +251,12 @@ vector< request_object > bbtone_api::get_service_requests_by_offer_id(uint64_t a
 }
 
 
-map <string, string> bbtone_api::accept_service_request(string operator_name, uint64_t target_request_id)const
+map <string, string> bbtone_api::attach_charge_to_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const
 {
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
-    request_accept_operation op;
-    op.operator_name = operator_name;
-    op.target_request_id = target_request_id;
-    op.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
-
-    bbtone_plugin_operation bop = op;
-
-    custom_json_operation jop;
-    jop.id = "bbtone";
-    jop.json = fc::json::to_string(bop);
-    jop.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
-
-    signed_transaction tx;
-    tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( jop );
-    tx.sign( init_key, _app->chain_database()->get_chain_id() );
-    tx.validate();
-
-    _app->chain_database()->push_transaction(tx);
-    _app->p2p_node()->broadcast_transaction(tx);
-
-    std::map<string, string> res;
-    res.insert(pair<string,string>("tx_id", tx.id().str()));
-    return res;
-}
-
-map <string, string> bbtone_api::ready_service_request(string operator_name, uint64_t target_request_id)const
-{
-    string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
-    fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
-
-    request_ready_operation op;
-    op.operator_name = operator_name;
-    op.target_request_id = target_request_id;
-    op.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
-
-    bbtone_plugin_operation bop = op;
-
-    custom_json_operation jop;
-    jop.id = "bbtone";
-    jop.json = fc::json::to_string(bop);
-    jop.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
-
-    signed_transaction tx;
-    tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( jop );
-    tx.sign( init_key, _app->chain_database()->get_chain_id() );
-    tx.validate();
-
-    _app->chain_database()->push_transaction(tx);
-    _app->p2p_node()->broadcast_transaction(tx);
-
-    std::map<string, string> res;
-    res.insert(pair<string,string>("tx_id", tx.id().str()));
-    return res;
-}
-
-map <string, string> bbtone_api::inwork_service_request(string operator_name, uint64_t target_request_id)const
-{
-    string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
-    fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
-
-    request_inwork_operation op;
-    op.operator_name = operator_name;
-    op.target_request_id = target_request_id;
-    op.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
-
-    bbtone_plugin_operation bop = op;
-
-    custom_json_operation jop;
-    jop.id = "bbtone";
-    jop.json = fc::json::to_string(bop);
-    jop.required_posting_auths.insert(OPERATOR_ASSIGNEE_ACC);
-
-    signed_transaction tx;
-    tx.set_expiration( _app->chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
-    tx.operations.push_back( jop );
-    tx.sign( init_key, _app->chain_database()->get_chain_id() );
-    tx.validate();
-
-    _app->chain_database()->push_transaction(tx);
-    _app->p2p_node()->broadcast_transaction(tx);
-
-    std::map<string, string> res;
-    res.insert(pair<string,string>("tx_id", tx.id().str()));
-    return res;
-}
-
-map <string, string> bbtone_api::report_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const
-{
-    string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
-    fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
-
-    request_report_operation op;
+    attach_charge_to_service_request_operation op;
     op.operator_name = operator_name;
     op.target_request_id = target_request_id;
     op.charge = charge;
@@ -380,12 +284,12 @@ map <string, string> bbtone_api::report_service_request(string operator_name, ui
     return res;
 }
 
-map <string, string> bbtone_api::end_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const
+map <string, string> bbtone_api::attach_refund_to_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const
 {
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
-    request_end_operation op;
+    attach_refund_to_service_request_operation op;
     op.operator_name = operator_name;
     op.target_request_id = target_request_id;
     op.error_code = error_code;

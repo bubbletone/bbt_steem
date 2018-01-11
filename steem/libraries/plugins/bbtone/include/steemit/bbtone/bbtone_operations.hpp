@@ -52,38 +52,7 @@ struct attach_request_to_service_offer_operation : base_operation
     void get_required_posting_authorities( flat_set<account_name_type>& a )const{  for( const auto& i : required_posting_auths ) a.insert(i); }
 };
 
-struct request_accept_operation : base_operation
-{
-    account_name_type   operator_name;
-    uint64_t            target_request_id;
-    string              encrypted_service_data;
-
-    flat_set<account_name_type> required_posting_auths;
-
-    void get_required_posting_authorities( flat_set<account_name_type>& a )const{  for( const auto& i : required_posting_auths ) a.insert(i); }
-};
-
-struct request_ready_operation : base_operation
-{
-    account_name_type   operator_name;
-    uint64_t            target_request_id;
-
-    flat_set<account_name_type> required_posting_auths;
-
-    void  get_required_posting_authorities( flat_set<account_name_type>& a )const{  for( const auto& i : required_posting_auths ) a.insert(i); }
-};
-
-struct request_inwork_operation : base_operation
-{
-    account_name_type   operator_name;
-    uint64_t            target_request_id;
-
-    flat_set<account_name_type> required_posting_auths;
-
-    void  get_required_posting_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_posting_auths ) a.insert(i); }
-};
-
-struct request_report_operation : base_operation
+struct attach_charge_to_service_request_operation : base_operation
 {
     account_name_type   operator_name;
     uint64_t            target_request_id;
@@ -95,7 +64,7 @@ struct request_report_operation : base_operation
     void  get_required_posting_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_posting_auths ) a.insert(i); }
 };
 
-struct request_end_operation : base_operation
+struct attach_refund_to_service_request_operation : base_operation
 {
     account_name_type   operator_name;
     uint64_t            target_request_id;
@@ -112,11 +81,8 @@ typedef fc::static_variant<
          offer_cancel_operation,
 
          attach_request_to_service_offer_operation,
-         request_accept_operation,
-         request_ready_operation,
-         request_inwork_operation,
-         request_report_operation,
-         request_end_operation
+         attach_charge_to_service_request_operation,
+         attach_refund_to_service_request_operation
 
       > bbtone_plugin_operation;
 
@@ -124,11 +90,8 @@ DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, create_service_
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_cancel );
 
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_request_to_service_offer );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_accept );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_ready );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_inwork );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_report );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, request_end );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_charge_to_service_request );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_refund_to_service_request );
 
 } } // steemit::bbtone
 
@@ -157,33 +120,14 @@ FC_REFLECT( steemit::bbtone::attach_request_to_service_offer_operation,
     (required_posting_auths)
 );
 
-FC_REFLECT( steemit::bbtone::request_accept_operation,
-    (operator_name)
-    (target_request_id)
-    (encrypted_service_data)
-    (required_posting_auths)
-);
-
-FC_REFLECT( steemit::bbtone::request_ready_operation,
-    (operator_name)
-    (target_request_id)
-    (required_posting_auths)
-);
-
-FC_REFLECT( steemit::bbtone::request_inwork_operation,
-    (operator_name)
-    (target_request_id)
-    (required_posting_auths)
-);
-
-FC_REFLECT( steemit::bbtone::request_report_operation,
+FC_REFLECT( steemit::bbtone::attach_charge_to_service_request_operation,
     (operator_name)
     (target_request_id)
     (charge)
     (required_posting_auths)
 );
 
-FC_REFLECT( steemit::bbtone::request_end_operation,
+FC_REFLECT( steemit::bbtone::attach_refund_to_service_request_operation,
     (operator_name)
     (target_request_id)
     (error_code)

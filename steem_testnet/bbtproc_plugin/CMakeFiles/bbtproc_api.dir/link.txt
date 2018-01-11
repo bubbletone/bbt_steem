@@ -1,2 +1,0 @@
-/usr/bin/ar qc libbbtproc_api.a  CMakeFiles/bbtproc_api.dir/bbtproc_api_plugin.cpp.o
-/usr/bin/ranlib libbbtproc_api.a

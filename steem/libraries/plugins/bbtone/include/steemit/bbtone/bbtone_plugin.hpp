@@ -96,11 +96,8 @@ public:
     vector< request_object > get_active_service_requests_attached_to_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const;
     vector< request_object > get_service_requests_by_offer_id(uint64_t assignee_offer_id, uint32_t limit)const;
     vector< request_object > get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const;
-    map <string, string> accept_service_request(string operator_name, uint64_t target_request_id)const;
-    map <string, string> ready_service_request(string operator_name, uint64_t target_request_id)const;
-    map <string, string> inwork_service_request(string operator_name, uint64_t target_request_id)const;
-    map <string, string> report_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const;
-    map <string, string> end_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
+    map <string, string> attach_charge_to_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const;
+	map <string, string> attach_refund_to_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
 
 private:
     app::application* _app = nullptr;
@@ -114,10 +111,7 @@ FC_API( steemit::bbtone::bbtone_api,
     (attach_request_to_service_offer)
     (get_active_service_requests_attached_to_offers_of_given_operator_name)
     (get_service_requests_by_offer_id)
-    (accept_service_request)
-    (ready_service_request)
-    (inwork_service_request)
-    (report_service_request)
-    (end_service_request)
+    (attach_charge_to_service_request)
+	(attach_refund_to_service_request)
 );
 
