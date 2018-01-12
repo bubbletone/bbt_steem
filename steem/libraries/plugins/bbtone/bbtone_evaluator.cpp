@@ -42,6 +42,11 @@ void create_service_offer_evaluator::do_apply( const create_service_offer_operat
         obj.price           = o.price;
         obj.state           = offer_active;
     });
+
+    dlog("operation: ${op_type} applied, data: ${data}",
+        ("op_type", fc::get_typename<create_service_offer_operation>::name())
+        ("data", o)
+    );
 }
 
 void offer_cancel_evaluator::do_apply( const offer_cancel_operation& o )
@@ -55,6 +60,11 @@ void offer_cancel_evaluator::do_apply( const offer_cancel_operation& o )
     {
         obj.state           = offer_completed;
     });
+
+    dlog("operation: ${op_type} applied, data: ${data}",
+        ("op_type", fc::get_typename<offer_cancel_operation>::name())
+        ("data", o)
+    );
 }
 
 void attach_request_to_service_offer_evaluator::do_apply( const attach_request_to_service_offer_operation& o )
@@ -91,6 +101,11 @@ void attach_request_to_service_offer_evaluator::do_apply( const attach_request_t
         obj.state = request_attached;
         obj.error_code = 0;
     });
+
+    dlog("operation: ${op_type} applied, data: ${data}",
+        ("op_type", fc::get_typename<attach_request_to_service_offer_operation>::name())
+        ("data", o)
+    );
 }
 
 void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_to_service_request_operation& o )
@@ -118,6 +133,11 @@ void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_t
 
     const auto& assignee = _db.get_account( o.operator_name );
 	_db.adjust_balance( assignee, o.charge);
+
+    dlog("operation: ${op_type} applied, data: ${data}",
+        ("op_type", fc::get_typename<attach_charge_to_service_request_operation>::name())
+        ("data", o)
+    );
 }
 
 void attach_refund_to_service_request_evaluator::do_apply( const attach_refund_to_service_request_operation& o )
@@ -145,7 +165,10 @@ void attach_refund_to_service_request_evaluator::do_apply( const attach_refund_t
         _db.adjust_balance( issuer, request_it->max_credits - request_it->charge );
     }
 
-
+    dlog("operation: ${op_type} applied, data: ${data}",
+        ("op_type", fc::get_typename<attach_refund_to_service_charge_operation>::name())
+        ("data", o)
+    );
 }
 
 } } // steemit::chain

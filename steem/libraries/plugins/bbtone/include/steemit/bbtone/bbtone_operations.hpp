@@ -8,9 +8,6 @@
 #include <fc/crypto/equihash.hpp>
 #include <fc/api.hpp>
 
-#include <steemit/bbtone/bbtone_objects.hpp>
-#include <steemit/bbtone/bbtone_plugin.hpp>
-
 namespace steemit { namespace bbtone {
 
 using namespace steemit::protocol;
