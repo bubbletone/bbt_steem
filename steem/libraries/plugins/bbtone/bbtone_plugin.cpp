@@ -83,7 +83,7 @@ bbtone_plugin_impl::bbtone_plugin_impl( bbtone_plugin& _plugin )
     _custom_operation_interpreter->register_evaluator< offer_cancel_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< attach_request_to_service_offer_evaluator >( &_self );
     _custom_operation_interpreter->register_evaluator< attach_charge_to_service_request_evaluator >( &_self );
-    _custom_operation_interpreter->register_evaluator< attach_refund_to_service_charge_evaluator >( &_self );
+    _custom_operation_interpreter->register_evaluator< attach_refund_to_service_request_evaluator >( &_self );
 
     database().set_custom_operation_interpreter( _self.plugin_name(), _custom_operation_interpreter );
     return;
@@ -284,12 +284,12 @@ map <string, string> bbtone_api::attach_charge_to_service_request(string operato
     return res;
 }
 
-map <string, string> bbtone_api::attach_refund_to_service_charge(string operator_name, uint64_t target_request_id, uint32_t error_code)const
+map <string, string> bbtone_api::attach_refund_to_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const
 {
     string OPERATOR_ASSIGNEE_ACC = STEEMIT_INIT_MINER_NAME;
     fc::ecc::private_key init_key = STEEMIT_INIT_PRIVATE_KEY;
 
-    attach_refund_to_service_charge_operation op;
+    attach_refund_to_service_request_operation op;
     op.operator_name = operator_name;
     op.target_request_id = target_request_id;
     op.error_code = error_code;

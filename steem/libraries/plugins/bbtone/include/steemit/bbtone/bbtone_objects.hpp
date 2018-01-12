@@ -88,11 +88,9 @@ typedef multi_index_container<
 /**** Request Object ****/
 enum request_states
 {
-    request_preparing   = 1,
-    request_accepted    = 2,
-    request_ready       = 3,
-    request_inwork      = 4,
-    request_completed   = 5,
+    request_attached   = 1,
+    request_charged    = 2,
+    request_refunded   = 3,
 };
 
 class request_object : public object< request_object_type, request_object >

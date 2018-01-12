@@ -88,7 +88,7 @@ void attach_request_to_service_offer_evaluator::do_apply( const attach_request_t
         obj.user_id = o.user_id;
         obj.user_pub_key = o.user_pub_key;
         obj.charge = asset(0, STEEM_SYMBOL);
-        obj.state = request_preparing;
+        obj.state = request_attached;
         obj.error_code = 0;
     });
 }
@@ -98,7 +98,7 @@ void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_t
     const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
     const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
     FC_ASSERT(request_it != request_idx.end(), "request not found");
-    FC_ASSERT(request_it->state == request_inwork, "incorrect request state");
+    FC_ASSERT(request_it->state == request_attached, "incorrect request state");
 
     const auto & offer_idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
     auto offer_it = offer_idx.find(offer_id_type(request_it->assignee_offer_id));
@@ -106,17 +106,22 @@ void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_t
     FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can report request");
 
     FC_ASSERT(request_it->charge + o.charge <= request_it->max_credits, "charge > max_credits");
+    
+	// [VARIANT] - simplest version with direct balance modifications. ONLY FOR PROOF_OF_CONCEPT
+	// send charge to charging address immediately. The "change" will be taken by requestor with "refund" tx
 
     _db.modify<request_object>(*request_it, [&]( request_object& obj )
     {
         obj.charge_data = o.charge_data;
         obj.charge += o.charge;
     });
+
+    const auto& assignee = _db.get_account( o.operator_name );
+	_db.adjust_balance( assignee, o.charge);
 }
 
-void attach_refund_to_service_charge_evaluator::do_apply( const attach_refund_to_service_charge_operation& o )
+void attach_refund_to_service_request_evaluator::do_apply( const attach_refund_to_service_request_operation& o )
 {
-    const auto& assignee = _db.get_account( o.operator_name );
 
     const auto& request_idx = _db.get_index<request_index>().indices().get<request_index_tag::by_id>();
     const auto& request_it = request_idx.find(request_id_type(o.target_request_id));
@@ -127,18 +132,20 @@ void attach_refund_to_service_charge_evaluator::do_apply( const attach_refund_to
     FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
     FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can accept request");
 
-    const auto& issuer = _db.get_account( request_it->issuer_operator_name );
-
-    if (request_it->charge < request_it->max_credits) { // if request not fully charged return remain credits
-        _db.adjust_balance( issuer, request_it->max_credits - request_it->charge );
-        _db.adjust_balance( assignee, -(request_it->max_credits - request_it->charge) );
-    }
 
     _db.modify<request_object>(*request_it, [&]( request_object& obj )
     {
-        obj.state = request_completed;
+        obj.state = request_refunded;
         obj.error_code = o.error_code;
     });
+
+    // const auto& assignee = _db.get_account( o.operator_name );
+    const auto& issuer = _db.get_account( request_it->issuer_operator_name );
+    if (request_it->charge < request_it->max_credits) { // if request not fully charged return remain credits
+        _db.adjust_balance( issuer, request_it->max_credits - request_it->charge );
+    }
+
+
 }
 
 } } // steemit::chain

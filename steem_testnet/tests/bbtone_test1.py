@@ -33,11 +33,11 @@ def get_api_response(data):
         data['method'] = 'call'
         result_field = 'result'
         json_str = json.dumps(data)
-        print("[DEBUG] WS_SEND: {}".format(json_str))
+        # print("[DEBUG] WS_SEND: {}".format(json_str))
         ws.send(json_str)
         response_str = ws.recv()
         ws.close()
-        print("[DEBUG] WS_RECV: {}".format(response_str))
+        # print("[DEBUG] WS_RECV: {}".format(response_str))
         res = json.loads(response_str)
         return res
     except Exception as e:
@@ -55,6 +55,8 @@ if API_NUM is None:
 
 ## YOU CAN FIND ALL API FUNCTIONS in "bbtone_plugin.hpp" file
 
+
+get_balance = lambda operator_name: get_api_response({'id': 1, 'params': [0, 'get_accounts', [[operator_name]]]})['result'][0]['balance']
 
 
 OFFER_TRANSACTION_TTL = 100 # 100 sec until offer is "alive"
@@ -82,6 +84,7 @@ print("[STAGE] broadcasted offer from operator_id: {}, tx_id: {}\n".format(OFFER
 
 
 
+
 SEARCH_LIMIT = 42
 print("""\n[#] Operator '{}' (that will be an requesting operator in future) searches N < {} suitable offers in blockchain"""
      .format(OFFERING_OPERATOR, SEARCH_LIMIT))
@@ -103,12 +106,7 @@ REQUEST_OFFER_PRICE = o['price']
 print("\n[#] Requesting operator '{}' choose one 'offer' transaction(tx_id: {}, price: {})".format(REQUESTING_OPERATOR, REQUEST_OFFER_ID, REQUEST_OFFER_PRICE))
 
 
-# check if there is enough available funds on requesting operator's balance
-res = get_api_response({'id': 1, 'params': [0, 'get_accounts', [[REQUESTING_OPERATOR]]]})['result']
-REQUESTING_OPERATOR_BALANCE = res[0]['balance']
-print("[STAGE] The balance of requesting operator '{}': {}\n".format(REQUESTING_OPERATOR, REQUESTING_OPERATOR_BALANCE))
-
-
+print("[STAGE] Balances: requesting operator '{}': {}, offering operator '{}': {}\n".format(REQUESTING_OPERATOR, get_balance(REQUESTING_OPERATOR), OFFERING_OPERATOR, get_balance(OFFERING_OPERATOR)))
 
 CUSTOMER_NAME = 'vasiliy'
 CUSTOMER_PUBLIC_KEY_WIF = 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4' # the one from "initminer"
@@ -118,17 +116,15 @@ wif_to_hex = lambda wif_key: binascii.b2a_hex(base58.b58decode(wif_key)).decode(
 # for example: 'TST6LLegbAgLAy28EHrffBVuANFWcFgmqRMW13wBmTExqFE9SCkg4': '287e2ccc00a2040a7a97ae8544168065e7bd197fa43a238344f76fc6992ef1d780170525c81f6d'
 CUSTOMER_PUBLIC_KEY_HEX = wif_to_hex(CUSTOMER_PUBLIC_KEY_WIF)
 
-print("\n[#] Requesting operator '{}' attaches service request for customer '{}' (public_key: {}), using received offer (id: {}) and trying to send (credits: {}) with it"
-      .format(REQUESTING_OPERATOR, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX, REQUEST_OFFER_ID, REQUEST_OFFER_PRICE))
+print("\n[#] Requesting operator '{}' attaches service request for customer '{}' (public_key: 0xXXXXXXXXXX), using received offer (id: {}) and trying to send (credits: {}) with it"
+      .format(REQUESTING_OPERATOR, CUSTOMER_NAME, REQUEST_OFFER_ID, REQUEST_OFFER_PRICE))
 
 res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_request_to_service_offer', [REQUESTING_OPERATOR, REQUEST_OFFER_ID, REQUEST_TRANSACTION_TTL, REQUEST_OFFER_PRICE, CUSTOMER_NAME, CUSTOMER_PUBLIC_KEY_HEX]]})['result']
 REQUEST_TX = res
 
-
 # check balance after attaching request
-res = get_api_response({'id': 1, 'params': [0, 'get_accounts', [[REQUESTING_OPERATOR]]]})['result']
-REQUESTING_OPERATOR_BALANCE = res[0]['balance']
-print("[STAGE] Now, the balance of requesting operator '{}': {}\n".format(REQUESTING_OPERATOR, REQUESTING_OPERATOR_BALANCE))
+
+print("[STAGE] Balances: requesting operator '{}': {}, offering operator '{}': {}\n".format(REQUESTING_OPERATOR, get_balance(REQUESTING_OPERATOR), OFFERING_OPERATOR, get_balance(OFFERING_OPERATOR)))
 
 
 print("\n[#] Offering operator '{}' permanently monitors blockchain, looking for active service requests, attached to its offers...".format(OFFERING_OPERATOR))
@@ -136,21 +132,30 @@ REQUESTS_LIMIT = 42
 res = get_api_response({'id': 1, 'params': [API_NUM, 'get_active_service_requests_attached_to_offers_of_given_operator_name', [OFFERING_OPERATOR, REQUESTS_LIMIT]]})['result']
 print("\n[#] Offering operator '{}' found {} active requests: [{}]".format(OFFERING_OPERATOR, len(res), " ". join(str('(id: ' + str(x['id']) + ', user_id: "' + x['user_id'] + '", max_credits: ' + x['max_credits']) for x in res)))
 
-SERVICE_REQUEST_TX = random.choice(res)
+request_tx = random.choice(res)
 
 
-print("\n[#] Offering operator '{}' chooses one service request(tx_id: {}, max_credits: {}), attached to one of his offers".format(OFFERING_OPERATOR, SERVICE_REQUEST_TX['id'], SERVICE_REQUEST_TX['max_credits']))
-#pprint(SERVICE_REQUEST_TX)
-exit(0);
+REQUEST_ID = request_tx['id']
+REQUEST_MAX_CREDITS = request_tx['max_credits']
 
 
-res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_charge_to_service', [SERVICE_REQUEST_TX['tx_id']]]})['result']
+print("\n[#] Offering operator '{}' chooses one service request(tx_id: {}, max_credits: {}), attached to one of his offers".format(OFFERING_OPERATOR, REQUEST_ID, REQUEST_MAX_CREDITS))
 
+
+res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_charge_to_service_request', [OFFERING_OPERATOR, REQUEST_ID, REQUEST_MAX_CREDITS, "0xHEX_SECRET_FOR_CLIENT_TO_PROVIDE_SERVICE"]]})['result']
+pprint(res)
+
+print("\n[#] Offering operator '{}' attaches the charge request(tx_id: {}, max_credits: {}) to found offer (, attached to one of his offers".format(OFFERING_OPERATOR, REQUEST_ID, REQUEST_MAX_CREDITS))
 CHARGE_TX = res
 
-print("\n[#] One of operators (assignee or issuer) attach 'refund' TX to any previous TX")
-res = get_api_response({'id': 1, 'params': [API_NUM, 'refund_and_close_request', [CHARGE_TX['tx_id']]]})['result']
 
-# pprint(res)
+print("[STAGE] Balances: requesting operator '{}': {}, offering operator '{}': {}\n".format(REQUESTING_OPERATOR, get_balance(REQUESTING_OPERATOR), OFFERING_OPERATOR, get_balance(OFFERING_OPERATOR)))
+
+print("\n[#] One of operators (assignee or issuer) attach 'refund' TX to any previous TX")
+
+res = get_api_response({'id': 1, 'params': [API_NUM, 'attach_refund_to_service_request', [REQUESTING_OPERATOR, REQUEST_ID, 65]]})['result']
+
+print("[STAGE] Balances: requesting operator '{}': {}, offering operator '{}': {}\n".format(REQUESTING_OPERATOR, get_balance(REQUESTING_OPERATOR), OFFERING_OPERATOR, get_balance(OFFERING_OPERATOR)))
+
 exit(0)
 

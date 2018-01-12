@@ -97,7 +97,7 @@ public:
     vector< request_object > get_service_requests_by_offer_id(uint64_t assignee_offer_id, uint32_t limit)const;
     vector< request_object > get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const;
     map <string, string> attach_charge_to_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const;
-	map <string, string> attach_refund_to_service_charge(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
+	map <string, string> attach_refund_to_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
 
 private:
     app::application* _app = nullptr;
@@ -112,6 +112,6 @@ FC_API( steemit::bbtone::bbtone_api,
     (get_active_service_requests_attached_to_offers_of_given_operator_name)
     (get_service_requests_by_offer_id)
     (attach_charge_to_service_request)
-	(attach_refund_to_service_charge)
+	(attach_refund_to_service_request)
 );
 

@@ -64,7 +64,7 @@ struct attach_charge_to_service_request_operation : base_operation
     void  get_required_posting_authorities( flat_set<account_name_type>& a )const{ for( const auto& i : required_posting_auths ) a.insert(i); }
 };
 
-struct attach_refund_to_service_charge_operation : base_operation
+struct attach_refund_to_service_request_operation : base_operation
 {
     account_name_type   operator_name;
     uint64_t            target_request_id;
@@ -82,7 +82,7 @@ typedef fc::static_variant<
 
          attach_request_to_service_offer_operation,
          attach_charge_to_service_request_operation,
-         attach_refund_to_service_charge_operation
+         attach_refund_to_service_request_operation
 
       > bbtone_plugin_operation;
 
@@ -91,7 +91,7 @@ DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_cancel );
 
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_request_to_service_offer );
 DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_charge_to_service_request );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_refund_to_service_charge );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_refund_to_service_request );
 
 } } // steemit::bbtone
 
@@ -127,7 +127,7 @@ FC_REFLECT( steemit::bbtone::attach_charge_to_service_request_operation,
     (required_posting_auths)
 );
 
-FC_REFLECT( steemit::bbtone::attach_refund_to_service_charge_operation,
+FC_REFLECT( steemit::bbtone::attach_refund_to_service_request_operation,
     (operator_name)
     (target_request_id)
     (error_code)
