@@ -8,9 +8,6 @@
 #include <fc/crypto/equihash.hpp>
 #include <fc/api.hpp>
 
-#include <steemit/bbtone/bbtone_objects.hpp>
-#include <steemit/bbtone/bbtone_plugin.hpp>
-
 namespace steemit { namespace bbtone {
 
 using namespace steemit::protocol;
@@ -85,13 +82,6 @@ typedef fc::static_variant<
          attach_refund_to_service_charge_operation
 
       > bbtone_plugin_operation;
-
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, create_service_offer );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_cancel );
-
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_request_to_service_offer );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_charge_to_service_request );
-DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_refund_to_service_charge );
 
 } } // steemit::bbtone
 

@@ -32,21 +32,12 @@
 #include <fc/api.hpp>
 
 #include <steemit/bbtone/bbtone_objects.hpp>
+#include <steemit/bbtone/bbtone_operations.hpp>
 
 
 namespace steemit { namespace bbtone {
 using namespace chain;
 using app::application;
-//
-// Plugins should #define their SPACE_ID's so plugins with
-// conflicting SPACE_ID assignments can be compiled into the
-// same binary (by simply re-assigning some of the conflicting #defined
-// SPACE_ID's in a build script).
-//
-// Assignment of SPACE_ID's cannot be done at run-time because
-// various template automagic depends on them being known at compile
-// time.
-//
 
 namespace detail
 {
@@ -66,6 +57,29 @@ public:
     virtual void plugin_initialize(const boost::program_options::variables_map& options) override;
     virtual void plugin_startup() override;
 
+    template<typename T>
+    transaction_id_type broadcast_op(T & op) const {
+        signed_transaction tx;
+        tx.set_expiration( app().chain_database()->head_block_time() + STEEMIT_MAX_TIME_UNTIL_EXPIRATION );
+
+        op.required_posting_auths.insert(STEEMIT_INIT_MINER_NAME);
+        bbtone_plugin_operation bop = op;
+
+        custom_json_operation jop;
+        jop.id = plugin_name();
+        jop.json = fc::json::to_string(bop);
+        jop.required_posting_auths.insert(STEEMIT_INIT_MINER_NAME);
+
+        tx.operations.push_back( jop );
+        tx.sign( STEEMIT_INIT_PRIVATE_KEY, app().chain_database()->get_chain_id() );
+        tx.validate();
+
+        app().chain_database()->push_transaction(tx);
+        app().p2p_node()->broadcast_transaction(tx);
+
+        return tx.id();
+    }
+
     flat_map<string,string> tracked_accounts()const; /// map start_range to end_range
 
     friend class detail::bbtone_plugin_impl;
@@ -84,6 +98,10 @@ public:
         wlog( "on bbtone api startup" );
     }
 
+    bbtone_plugin & get_plugin() const{
+        return *(_app->get_plugin<bbtone_plugin>("bbtone"));
+    }
+
 	 // [TODO] rename "operator_name" parameter in each function to exact role, for example "offering_operator" and "requesting_operator",
 	 // It will be useful to grep code, looking for all operations of needed role
 
@@ -97,11 +115,18 @@ public:
     vector< request_object > get_service_requests_by_offer_id(uint64_t assignee_offer_id, uint32_t limit)const;
     vector< request_object > get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const;
     map <string, string> attach_charge_to_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const;
-	map <string, string> attach_refund_to_service_charge(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
+    map <string, string> attach_refund_to_service_charge(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
 
 private:
     app::application* _app = nullptr;
 };
+
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, create_service_offer );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, offer_cancel );
+
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_request_to_service_offer );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_charge_to_service_request );
+DEFINE_PLUGIN_EVALUATOR( bbtone_plugin, bbtone_plugin_operation, attach_refund_to_service_charge );
 
 } } //steemit::bbtone
 
@@ -112,6 +137,6 @@ FC_API( steemit::bbtone::bbtone_api,
     (get_active_service_requests_attached_to_offers_of_given_operator_name)
     (get_service_requests_by_offer_id)
     (attach_charge_to_service_request)
-	(attach_refund_to_service_charge)
+    (attach_refund_to_service_charge)
 );
 
