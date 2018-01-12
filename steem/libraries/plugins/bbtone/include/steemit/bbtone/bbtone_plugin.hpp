@@ -77,6 +77,12 @@ public:
         app().chain_database()->push_transaction(tx);
         app().p2p_node()->broadcast_transaction(tx);
 
+        dlog("operation ${op_type} pushed, data: ${data}, tx_id: ${tx_id}",
+            ("op_type", fc::get_typename<T>::name())
+            ("data", op)
+            ("tx_id", tx.id().str())
+        );
+
         return tx.id();
     }
 
