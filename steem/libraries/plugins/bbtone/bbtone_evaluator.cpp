@@ -166,7 +166,7 @@ void attach_refund_to_service_request_evaluator::do_apply( const attach_refund_t
     }
 
     dlog("operation: ${op_type} applied, data: ${data}",
-        ("op_type", fc::get_typename<attach_refund_to_service_charge_operation>::name())
+        ("op_type", fc::get_typename<attach_refund_to_service_request_operation>::name())
         ("data", o)
     );
 }
