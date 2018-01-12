@@ -114,7 +114,7 @@ void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_t
     });
 }
 
-void attach_refund_to_service_request_evaluator::do_apply( const attach_refund_to_service_request_operation& o )
+void attach_refund_to_service_charge_evaluator::do_apply( const attach_refund_to_service_charge_operation& o )
 {
     const auto& assignee = _db.get_account( o.operator_name );
 

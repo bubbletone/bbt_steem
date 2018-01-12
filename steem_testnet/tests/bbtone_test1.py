@@ -20,7 +20,7 @@ def get_new_max_random_offer_id():
     return int(random.random() * 0xFFFFFFFFFFFFFFFF)
 
 
-BBT_NODE_WS_ENDPOINT = 'ws://10.197.197.59:8090'
+BBT_NODE_WS_ENDPOINT = 'ws://127.0.0.1:8090'
 # websocket.enableTrace(True)
 # API_NUM = 1
 
@@ -61,7 +61,7 @@ OFFER_TRANSACTION_TTL = 100 # 100 sec until offer is "alive"
 
 OFFERING_OPERATOR = "initminer"
 OFFER_ID_1=get_new_max_random_offer_id()
-OFFER_PRICE = "%.3f TESTS" % random.random()
+OFFER_PRICE = "%.3f SDR" % random.random()
 
 print("""\n[#] Operator '{}' (that will be an operator-assignee in future) broadcasts a transaction with service offer (with id: {}), offering service to other operators"""
      .format(OFFERING_OPERATOR, OFFER_ID_1))
@@ -140,7 +140,7 @@ SERVICE_REQUEST_TX = random.choice(res)
 
 
 print("\n[#] Offering operator '{}' chooses one service request(tx_id: {}, max_credits: {}), attached to one of his offers".format(OFFERING_OPERATOR, SERVICE_REQUEST_TX['id'], SERVICE_REQUEST_TX['max_credits']))
-pprint(SERVICE_REQUEST_TX)
+#pprint(SERVICE_REQUEST_TX)
 exit(0);
 
 
