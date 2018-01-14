@@ -186,12 +186,20 @@ vector< request_object > bbtone_api::get_active_service_requests_attached_to_off
 {
     vector< request_object > res;
 
-    const auto & idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_issuer_operator_name>();
-    auto startIt = idx.lower_bound(offering_operator_name);
-    auto endIt = idx.upper_bound(offering_operator_name);
+    const auto & offer_idx = _app->chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_operator_name>();
+    auto offerStartIt = offer_idx.lower_bound(offering_operator_name);
+    auto offerEndIt = offer_idx.upper_bound(offering_operator_name);
 
-    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
-        res.push_back(*it);
+    const auto & request_idx = _app->chain_database()->get_index<request_index>().indices().get<request_index_tag::by_state_assignee_offer_id>();
+
+    for (auto offerIt = offerStartIt; offerIt != offerEndIt && res.size() < limit; ++offerIt) {
+        auto requestStartIt = request_idx.lower_bound(std::make_tuple(request_attached, offerIt->id._id));
+        auto requestEndIt = request_idx.upper_bound(std::make_tuple(request_attached, offerIt->id._id));
+
+        for (auto requestIt = requestStartIt; requestIt != requestEndIt && res.size() < limit; ++requestIt) {
+            res.push_back(*requestIt);
+        }
+    }
 
     return res;
 }
