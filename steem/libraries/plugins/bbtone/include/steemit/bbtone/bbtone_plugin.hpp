@@ -111,17 +111,17 @@ public:
 	 // [TODO] rename "operator_name" parameter in each function to exact role, for example "offering_operator" and "requesting_operator",
 	 // It will be useful to grep code, looking for all operations of needed role
 
-    map<string, string> create_service_offer(string operator_name, uint64_t offer_local_id,
+    map<string, string> create_service_offer(string offering_operator_name, uint64_t offer_local_id,
         string offer_data, uint32_t offer_ttl, asset price)const;
-    vector< offer_object > get_service_offers_by_operator_name(string operator_name, uint32_t limit)const;
+    vector< offer_object > get_service_offers_by_operator_name(string offering_operator_name, uint32_t limit)const;
 
-    std::map<string, string> attach_request_to_service_offer(string offering_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
+    std::map<string, string> attach_request_to_service_offer(string requesting_offering_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
         asset credits, string user_id, fc::ecc::public_key user_pub_key)const;
-    vector< request_object > get_active_service_requests_attached_to_offers_of_given_operator_name(string offering_operator_name, uint32_t limit)const;
+    vector< request_object > get_active_service_requests_attached_to_offers_of_given_operator_name(string requesting_offering_operator_name, uint32_t limit)const;
     vector< request_object > get_service_requests_by_offer_id(uint64_t assignee_offer_id, uint32_t limit)const;
     vector< request_object > get_service_requests_by_state_and_assignee_offer_id(uint32_t state, uint64_t assignee_offer_id, uint32_t limit)const;
-    map <string, string> attach_charge_to_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const;
-	map <string, string> attach_refund_to_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
+    map <string, string> attach_charge_to_service_request(string offering_operator_name, uint64_t target_request_id, asset charge, string charge_data)const;
+    map <string, string> attach_refund_to_service_request(string operator_name, uint64_t target_request_id, uint32_t error_code)const;
 
 private:
     app::application* _app = nullptr;
@@ -143,6 +143,6 @@ FC_API( steemit::bbtone::bbtone_api,
     (get_active_service_requests_attached_to_offers_of_given_operator_name)
     (get_service_requests_by_offer_id)
     (attach_charge_to_service_request)
-	(attach_refund_to_service_request)
+    (attach_refund_to_service_request)
 );
 

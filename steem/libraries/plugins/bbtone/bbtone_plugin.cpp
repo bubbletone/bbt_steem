@@ -132,11 +132,11 @@ void bbtone_plugin::plugin_initialize(const boost::program_options::variables_ma
 }
 
 
-map<string, string> bbtone_api::create_service_offer(string operator_name, uint64_t offer_local_id,
+map<string, string> bbtone_api::create_service_offer(string offering_operator_name, uint64_t offer_local_id,
                     string offer_data, uint32_t offer_ttl, asset price)const
 {
     create_service_offer_operation op;
-    op.operator_name = operator_name;
+    op.operator_name = offering_operator_name;
     op.offer_ttl = offer_ttl;
     op.offer_local_id = offer_local_id;
     op.offer_data = offer_data;
@@ -150,12 +150,12 @@ map<string, string> bbtone_api::create_service_offer(string operator_name, uint6
     return res;
 }
 
-vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string operator_name, uint32_t limit)const
+vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string offering_operator_name, uint32_t limit)const
 {
     vector< offer_object > res;
     const auto & idx = _app->chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_operator_name>();
-    auto startIt = idx.lower_bound(operator_name);
-    auto endIt = idx.upper_bound(operator_name);
+    auto startIt = idx.lower_bound(offering_operator_name);
+    auto endIt = idx.upper_bound(offering_operator_name);
 
     for (auto it = startIt; res.size() < limit && it != endIt; ++it)
         res.push_back(*it);
@@ -163,11 +163,11 @@ vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string op
     return res;
 }
 
-std::map<string, string> bbtone_api::attach_request_to_service_offer(string offering_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
+std::map<string, string> bbtone_api::attach_request_to_service_offer(string requesting_operator_name, uint64_t target_offer_id, uint32_t request_ttl,
     asset credits, string user_id, fc::ecc::public_key user_pub_key)const
 {
     attach_request_to_service_offer_operation op;
-    op.issuer_operator_name = offering_operator_name;
+    op.issuer_operator_name = requesting_operator_name;
     op.target_offer_id = target_offer_id;
     op.request_ttl = request_ttl;
     op.credits = credits;
@@ -211,10 +211,10 @@ vector< request_object > bbtone_api::get_service_requests_by_offer_id(uint64_t a
 }
 
 
-map <string, string> bbtone_api::attach_charge_to_service_request(string operator_name, uint64_t target_request_id, asset charge, string charge_data)const
+map <string, string> bbtone_api::attach_charge_to_service_request(string offering_operator_name, uint64_t target_request_id, asset charge, string charge_data)const
 {
     attach_charge_to_service_request_operation op;
-    op.operator_name = operator_name;
+    op.operator_name = offering_operator_name;
     op.target_request_id = target_request_id;
     op.charge = charge;
     op.charge_data = charge_data;

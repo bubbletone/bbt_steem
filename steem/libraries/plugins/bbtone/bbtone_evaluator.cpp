@@ -121,7 +121,7 @@ void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_t
     FC_ASSERT(offer_it->operator_name == o.operator_name, "only assignee offer owner can report request");
 
     FC_ASSERT(request_it->charge + o.charge <= request_it->max_credits, "charge > max_credits");
-    
+
 	// [VARIANT] - simplest version with direct balance modifications. ONLY FOR PROOF_OF_CONCEPT
 	// send charge to charging address immediately. The "change" will be taken by requestor with "refund" tx
 
@@ -132,7 +132,7 @@ void attach_charge_to_service_request_evaluator::do_apply( const attach_charge_t
     });
 
     const auto& assignee = _db.get_account( o.operator_name );
-	_db.adjust_balance( assignee, o.charge);
+    _db.adjust_balance( assignee, o.charge);
 
     dlog("operation: ${op_type} applied, data: ${data}",
         ("op_type", fc::get_typename<attach_charge_to_service_request_operation>::name())
