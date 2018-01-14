@@ -57,6 +57,9 @@ public:
     virtual void plugin_initialize(const boost::program_options::variables_map& options) override;
     virtual void plugin_startup() override;
 
+    void mainloop();
+    void cancel_expired_offers();
+
     template<typename T>
     transaction_id_type broadcast_op(T & op) const {
         signed_transaction tx;

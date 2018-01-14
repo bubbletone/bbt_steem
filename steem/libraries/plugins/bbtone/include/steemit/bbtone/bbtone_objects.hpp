@@ -4,6 +4,7 @@
 #include <steemit/chain/database.hpp>
 
 #include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/identity.hpp>
 
 #include <fc/thread/future.hpp>
 #include <fc/api.hpp>
@@ -65,8 +66,19 @@ typedef offer_object::id_type offer_id_type;
 namespace offer_index_tag {
     struct by_id;
     struct by_operator_name;
+    struct by_state_operator_name;
     struct by_operator_name_offer_local_id;
+    struct by_expiration;
 }
+
+struct offer_by_expiration{
+    bool operator()(const offer_object & rhs, const offer_object & lhs)const {
+        if (rhs.state != lhs.state)
+            return rhs.state > lhs.state;
+        else
+            return rhs.tx_time + fc::seconds(rhs.offer_ttl) > lhs.tx_time + fc::seconds(lhs.offer_ttl);
+    }
+};
 
 typedef multi_index_container<
     offer_object,
@@ -79,7 +91,15 @@ typedef multi_index_container<
                 member< offer_object, uint64_t, &offer_object::offer_local_id >
             >,
             composite_key_compare< std::less< string >, std::greater< uint64_t > >
-        >
+        >,
+        ordered_non_unique< tag< offer_index_tag::by_state_operator_name >,
+            composite_key< offer_object,
+                member< offer_object, uint32_t, &offer_object::state >,
+                member< offer_object, account_name_type, &offer_object::operator_name >
+            >,
+            composite_key_compare< std::greater< uint32_t >, std::less< string > >
+        >,
+        ordered_non_unique< tag< offer_index_tag::by_expiration >, identity<offer_object>, offer_by_expiration>
     >,
     allocator< offer_object >
 > offer_index;

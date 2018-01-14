@@ -153,12 +153,14 @@ map<string, string> bbtone_api::create_service_offer(string offering_operator_na
 vector< offer_object > bbtone_api::get_service_offers_by_operator_name(string offering_operator_name, uint32_t limit)const
 {
     vector< offer_object > res;
-    const auto & idx = _app->chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_operator_name>();
-    auto startIt = idx.lower_bound(offering_operator_name);
-    auto endIt = idx.upper_bound(offering_operator_name);
+    const auto & idx = _app->chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_state_operator_name>();
+    auto startIt = idx.lower_bound(std::make_tuple(offer_active, offering_operator_name));
+    auto endIt = idx.upper_bound(std::make_tuple(offer_active, offering_operator_name));
 
-    for (auto it = startIt; res.size() < limit && it != endIt; ++it)
-        res.push_back(*it);
+    for (auto it = startIt; res.size() < limit && it != endIt; ++it) {
+        if (it->tx_time + fc::seconds(it->offer_ttl) >= fc::time_point(fc::seconds(std::time(nullptr))))
+            res.push_back(*it);
+    }
 
     return res;
 }
@@ -251,8 +253,44 @@ map <string, string> bbtone_api::attach_refund_to_service_request(string operato
     return res;
 }
 
+void bbtone_plugin::cancel_expired_offers()
+{
+    const auto & idx = app().chain_database()->get_index<offer_index>().indices().get<offer_index_tag::by_expiration>();
+
+    auto offerIt = idx.begin();
+    while ( offerIt != idx.end() &&
+            offerIt->state == offer_active &&
+            offerIt->tx_time + fc::seconds(offerIt->offer_ttl) < fc::time_point(fc::time_point(fc::seconds(std::time(nullptr)))))
+    {
+        offer_cancel_operation op;
+        op.operator_name = STEEMIT_INIT_MINER_NAME;
+        op.offer_id = offerIt->id._id;
+        offerIt++;
+
+        try {
+            broadcast_op(op);
+        }
+        catch (const std::exception & ex) {
+            wlog("auto expire offer: ${msg}", ("msg", ex.what()));
+        }
+    }
+}
+
+void bbtone_plugin::mainloop()
+{
+    while (true) {
+        fc::usleep( fc::microseconds( 296645 ) );  // wake up a little over 3Hz
+
+        cancel_expired_offers();
+    }
+}
+
 void bbtone_plugin::plugin_startup()
 {
+    fc::async([this]()
+    {
+        mainloop();
+    });
 }
 
 flat_map<string,string> bbtone_plugin::tracked_accounts() const

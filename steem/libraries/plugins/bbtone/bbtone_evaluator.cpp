@@ -54,7 +54,8 @@ void offer_cancel_evaluator::do_apply( const offer_cancel_operation& o )
     const auto & idx = _db.get_index<offer_index>().indices().get<offer_index_tag::by_id>();
     auto offer_it = idx.find(offer_id_type(o.offer_id));
     FC_ASSERT(offer_it != idx.end(), "offer not found");
-    FC_ASSERT(offer_it->operator_name == o.operator_name , "only offer owner can cancel offer");
+    FC_ASSERT(offer_it->operator_name == o.operator_name ||
+              o.operator_name == STEEMIT_INIT_MINER_NAME, "only offer owner can cancel offer");
 
     _db.modify<offer_object>(*offer_it, [&]( offer_object& obj )
     {
@@ -76,6 +77,14 @@ void attach_request_to_service_offer_evaluator::do_apply( const attach_request_t
     auto offer_it = offer_idx.find(offer_id_type(o.target_offer_id));
     FC_ASSERT(offer_it != offer_idx.end(), "assignee offer not found");
 
+    if (offer_it->tx_time + fc::seconds(offer_it->offer_ttl) < (time_point)_db.head_block_time()) {
+        _db.modify<offer_object>(*offer_it, [&]( offer_object& obj )
+        {
+            obj.state           = offer_completed;
+        });
+        FC_THROW_EXCEPTION( fc::assert_exception, "assignee expired");
+    }
+
     FC_ASSERT(offer_it->state == offer_active, "offer not active");
     FC_ASSERT(o.credits <= offer_it->price, "request credits > offer price");
 
@@ -86,6 +95,7 @@ void attach_request_to_service_offer_evaluator::do_apply( const attach_request_t
 	// [TODO] funds must be "locked" in request, and allowed to return only by "refund" transaction
     // const auto& assignee = _db.get_account( offer_it->operator_name );
     // _db.adjust_balance( assignee, o.credits );
+
 
 
     _db.create<request_object>( [&]( request_object& obj )
